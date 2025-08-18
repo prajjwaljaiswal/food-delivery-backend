@@ -1,0 +1,13 @@
+// src/auth/dto/reset-password.dto.ts
+import { IsString, MinLength } from 'class-validator';
+
+export class ResetPasswordDto {
+  @IsString()
+  @MinLength(6)
+  password: string;
+
+  @IsString()
+  @MinLength(6)
+  // Optional: ensure confirmPassword matches password in controller/service
+  confirmPassword: string;
+}
