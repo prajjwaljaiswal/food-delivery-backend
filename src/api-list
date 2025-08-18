@@ -1,0 +1,19 @@
+User
+
+1. --> User Registration api 
+2. --> verified otp api
+3. --> logout User api
+4. --> forget password api
+5. --> reset password api
+
+Admin
+
+1. --> Resturent Curd Operation api
+2. --> Driver Curd Operation api
+3. --> Categoury List Curd api
+4. --> Product List Curd api
+5. --> Order List Curd api
+6. --> Payment api
+7. --> Cuopan api
+8. --> CMS api
+9. --> Reporting api
