@@ -10,27 +10,59 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Product } from './product.entity';
+import { Restaurant } from './admin-restaurant.entity';
 
 @Entity('categories')
 export class Category {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column()
   name: string;
 
   @Column({ nullable: true })
   description: string;
 
+  @Column({ nullable: true })
+  image: string;
+
+  @Column({ nullable: true, unique: true })
+  slug: string;
+
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ default: true })
+  isVisible: boolean;
+
+  @Column({ default: 0 })
+  priority: number;
+
+  @Column({
+    type: 'enum',
+    enum: ['starter', 'main', 'dessert', 'drink', 'addon'],
+    nullable: true
+  })
+  type: 'starter' | 'main' | 'dessert' | 'drink' | 'addon';
+
+  @Column('simple-array', { nullable: true })
+  tags: string[];
+
+  // Relation with Restaurant
+  @ManyToOne(() => Restaurant, restaurant => restaurant.categories, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'restaurantId' })
+  restaurant: Restaurant;
+
+  @Column()
+  restaurantId: number;
+
+  // Relation with Products
+  @OneToMany(() => Product, product => product.category)
+  products: Product[];
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @OneToMany(() => Product, product => product.category)
-  products: Product[];
 }

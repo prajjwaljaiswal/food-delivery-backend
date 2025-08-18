@@ -1,26 +1,43 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { Category } from 'src/models';
+import { Category, Restaurant } from 'src/models';
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
+
+
+    @InjectRepository(Restaurant)
+    private restaurantRepo: Repository<Restaurant>,
   ) { }
 
   /* -------------------------------------------------------------------------- */
   /*                             Create new category                            */
   /* -------------------------------------------------------------------------- */
   async create(dto: CreateCategoryDto) {
-    const exists = await this.categoryRepo.findOne({ where: { name: dto.name } });
-    if (exists) throw new Error('Category already exists');
-    return await this.categoryRepo.save(dto);
-  }
+    // 1. Check if restaurant exists
+    const restaurant = await this.restaurantRepo.findOne({ where: { id: dto.restaurantId } });
+    if (!restaurant) {
+      throw new BadRequestException('Restaurant does not exist');
+    }
 
+    // 2. Check for duplicate category name in the same restaurant
+    const exists = await this.categoryRepo.findOne({
+      where: { name: dto.name, restaurantId: dto.restaurantId },
+    });
+    if (exists) {
+      throw new BadRequestException('Category already exists for this restaurant');
+    }
+
+    // 3. Save category
+    const category = this.categoryRepo.create(dto);
+    return await this.categoryRepo.save(category);
+  }
   /* -------------------------------------------------------------------------- */
   /*                       Get list of all categories (DESC)                    */
   /* -------------------------------------------------------------------------- */

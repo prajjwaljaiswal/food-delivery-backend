@@ -93,8 +93,6 @@ export class RestaurantController {
     return this.restaurantService.create(dto);
   }
 
-
-
   /* -------------------------- List All Restaurants ------------------------ */
   @Get()
   async getAll(
@@ -112,7 +110,6 @@ export class RestaurantController {
   }
 
   /* -------------------------- Update Restaurant ------------------------ */
-
 
   @Patch(':id')
   @UseInterceptors(
@@ -185,7 +182,6 @@ export class RestaurantController {
     // 4️⃣ Call service update method
     return this.restaurantService.update(id, dto);
   }
-
 
   /* -------------------------- Delete Restaurant ------------------------ */
   @Delete(':id')

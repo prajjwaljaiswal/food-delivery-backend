@@ -19,6 +19,11 @@ export class Restaurant {
     @PrimaryGeneratedColumn()
     id: number;
 
+
+    // Relation: One restaurant has many categories
+    @OneToMany(() => Category, category => category.restaurant)
+    categories: Category[];
+
     @Column()
     name: string;
 
