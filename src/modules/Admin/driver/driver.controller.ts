@@ -13,7 +13,7 @@ import { diskStorage } from 'multer';
 @Roles(RoleEnum.ADMIN)
 @Controller('admin/drivers')
 export class DriverController {
-  constructor(private readonly driverService: DriverService) {}
+  constructor(private readonly driverService: DriverService) { }
 
   /* -------------------------- Create Driver ------------------------ */
   @Post()

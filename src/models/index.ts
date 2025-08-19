@@ -4,7 +4,7 @@ export { RoleEntity } from './role.entity';
 export { Otp } from './otp.entity';
 export { DeviceToken } from './device-token.entity';
 export { Driver } from './driver.entity';
-export { Restaurant } from './restaurant.entity';
+export { Restaurant } from './admin-restaurant.entity';
 export { Category } from './category.entity';
 export { Product } from './product.entity';
 export { Order } from './order.entity';

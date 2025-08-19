@@ -1,9 +1,19 @@
 // File: src/admin/driver/dto/create-driver.dto.ts
-import { IsEmail, IsNotEmpty, IsOptional, IsPhoneNumber, IsString, MinLength } from 'class-validator';
+
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsPhoneNumber,
+  IsString,
+  MinLength,
+  IsBoolean,
+  IsNumber,
+} from 'class-validator';
+import { DriverStatus } from 'src/models/driver.entity';
 
 export class CreateDriverDto {
-
-
   @IsOptional()
   @IsEmail()
   email?: string;
@@ -37,6 +47,56 @@ export class CreateDriverDto {
   @IsNotEmpty()
   name: string;
 
+  // ✅ Driver status
+  @IsOptional()
+  @IsEnum(DriverStatus)
+  status?: DriverStatus;
+
+  // ✅ Vehicle details
+  @IsOptional()
+  @IsString()
+  vehicleType?: string;
+
+  @IsOptional()
+  @IsString()
+  licensePlate?: string;
+
+  @IsOptional()
+  @IsString()
+  insuranceNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  rcBookNumber?: string;
+
+  // ✅ Verification documents
+  @IsOptional()
+  @IsString()
+  idProof?: string;
+
+  @IsOptional()
+  @IsString()
+  licenseDoc?: string;
+
+  @IsOptional()
+  @IsString()
+  backgroundCheck?: string;
+
+  // ✅ Availability (online/offline)
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
+
+  // ✅ Performance stats
+  @IsOptional()
+  @IsNumber()
+  completedDeliveries?: number;
+
+  @IsOptional()
+  @IsNumber()
+  averageRating?: number;
+
+  @IsOptional()
+  @IsNumber()
+  cancellations?: number;
 }
-
-

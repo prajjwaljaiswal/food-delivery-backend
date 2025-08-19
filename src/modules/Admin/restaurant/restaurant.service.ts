@@ -14,8 +14,8 @@ export class RestaurantService {
     @InjectRepository(Restaurant)
     private restaurantRepo: Repository<Restaurant>,
   ) { }
-  async create(dto: CreateRestaurantDto, imagePath?: string) {
-    // 1. Duplicate check
+  async create(dto: CreateRestaurantDto) {
+    // 1️⃣ Duplicate check
     const existingRestaurant = await this.restaurantRepo.findOne({
       where: [{ email: dto.email }, { phone: dto.phone }],
     });
@@ -28,21 +28,30 @@ export class RestaurantService {
       };
     }
 
-    // 2. Password hash
+    // 2️⃣ Password hash
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // 3. Create restaurant entity
+    // 3️⃣ Create restaurant entity
     const restaurant = this.restaurantRepo.create({
       ...dto,
       password: hashedPassword,
-      role: { id: 2 },
-      image: imagePath,
+      role: { id: 2 }, // default restaurant role
+      logo: dto.logo || undefined,                 // single logo image
+      galleryImages: dto.galleryImages || [],      // multiple gallery images
+      bannerImages: dto.bannerImages || [],        // multiple banner images
+      foodSafetyCertificate: dto.foodSafetyCertificate || undefined,
+      taxIdCertificate: dto.taxIdCertificate || undefined,
+      businessLicense: dto.businessLicense || undefined,
+      insuranceCertificate: dto.insuranceCertificate || undefined,
+      enableOnlineOrders: dto.enableOnlineOrders ?? false, // boolean
+      enableTableBooking: dto.enableTableBooking ?? false, // boolean
+      weeklySchedule: dto.weeklySchedule,
     });
 
-    // 4. Save to DB
+    // 4️⃣ Save to DB
     const savedRestaurant = await this.restaurantRepo.save(restaurant);
 
-    // 5. Success response
+    // 5️⃣ Success response
     return {
       status: 201,
       success: true,
@@ -59,7 +68,7 @@ export class RestaurantService {
 
     if (filters?.keyword) {
       const keyword = `%${filters.keyword}%`;
-      // OR condition
+      // OR condition for search
       where = [
         { name: Like(keyword) },
         { email: Like(keyword) },
@@ -77,18 +86,32 @@ export class RestaurantService {
       select: {
         id: true,
         name: true,
+        ownerName: true,
         role: true,
         address: true,
         email: true,
         phone: true,
+        secondaryPhone: true,
+        cuisine: true,
+        country: true,
+        state: true,
+        city: true,
+        pincode: true,
+        deliveryTime: true,
+        description: true,
+        enableOnlineOrders: true,
+        enableTableBooking: true,
         is_verified: true,
-        image: true,
+        logo: true,
+        weeklySchedule: true,
+        galleryImages: true,
+        bannerImages: true,
         opening_time: true,
         closing_time: true,
         is_active: true,
         created_at: true,
-        updated_at: true
-      }
+        updated_at: true,
+      },
     });
 
     return {
@@ -104,28 +127,37 @@ export class RestaurantService {
       },
     };
   }
-
-
-
-
   async findOne(id: number) {
     const restaurant = await this.restaurantRepo.findOne({
       where: { id },
       select: {
         id: true,
         name: true,
+        ownerName: true,
         role: true,
         address: true,
         email: true,
         phone: true,
+        secondaryPhone: true,
+        cuisine: true,
+        country: true,
+        state: true,
+        city: true,
+        pincode: true,
+        deliveryTime: true,
+        description: true,
+        enableOnlineOrders: true,
+        enableTableBooking: true,
         is_verified: true,
-        image: true,
+        logo: true,
+        galleryImages: true,
+        bannerImages: true,
         opening_time: true,
         closing_time: true,
         is_active: true,
         created_at: true,
-        updated_at: true
-      }
+        updated_at: true,
+      },
     });
 
     if (!restaurant) {
@@ -144,8 +176,18 @@ export class RestaurantService {
       data: restaurant,
     };
   }
-
-  async update(id: number, dto: UpdateRestaurantDto) {
+  async update(
+    id: number,
+    dto: UpdateRestaurantDto,
+    logoPath?: string,
+    galleryPaths?: string[],
+    bannerPaths?: string[],
+    foodSafetyCertificatePath?: string,
+    taxIdCertificatePath?: string,
+    businessLicensePath?: string,
+    insuranceCertificatePath?: string,
+  ) {
+    // 1️⃣ Find existing restaurant
     const restaurant = await this.restaurantRepo.findOne({ where: { id } });
 
     if (!restaurant) {
@@ -157,27 +199,104 @@ export class RestaurantService {
       };
     }
 
+    // 2️⃣ Check email duplication
+    if (dto.email) {
+      const existingEmail = await this.restaurantRepo.findOne({ where: { email: dto.email } });
+      if (existingEmail && existingEmail.id !== id) {
+        return {
+          status: 409,
+          success: false,
+          message: 'Another restaurant with this email already exists.',
+        };
+      }
+    }
+
+    // 3️⃣ Check phone duplication
+    if (dto.phone) {
+      const existingPhone = await this.restaurantRepo.findOne({ where: { phone: dto.phone } });
+      if (existingPhone && existingPhone.id !== id) {
+        return {
+          status: 409,
+          success: false,
+          message: 'Another restaurant with this phone already exists.',
+        };
+      }
+    }
+
+    // 4️⃣ Update allowed fields
     Object.assign(restaurant, dto);
+
+    // 5️⃣ Hash password if provided
+    if (dto.password) {
+      restaurant.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    // 6️⃣ Merge weeklySchedule if provided
+    if (dto.weeklySchedule) {
+      restaurant.weeklySchedule = {
+        ...(restaurant.weeklySchedule || {}),
+        ...dto.weeklySchedule,
+      };
+    }
+
+    // 7️⃣ Set boolean fields with defaults
+    restaurant.enableOnlineOrders = dto.enableOnlineOrders ?? restaurant.enableOnlineOrders ?? false;
+    restaurant.enableTableBooking = dto.enableTableBooking ?? restaurant.enableTableBooking ?? false;
+
+    // 8️⃣ Update images
+    if (logoPath) restaurant.logo = logoPath;
+    if (galleryPaths && galleryPaths.length > 0) {
+      restaurant.galleryImages = [...(restaurant.galleryImages || []), ...galleryPaths];
+    }
+    if (bannerPaths && bannerPaths.length > 0) {
+      restaurant.bannerImages = [...(restaurant.bannerImages || []), ...bannerPaths];
+    }
+
+    // 9️⃣ Update certificate files
+    if (foodSafetyCertificatePath) restaurant.foodSafetyCertificate = foodSafetyCertificatePath;
+    if (taxIdCertificatePath) restaurant.taxIdCertificate = taxIdCertificatePath;
+    if (businessLicensePath) restaurant.businessLicense = businessLicensePath;
+    if (insuranceCertificatePath) restaurant.insuranceCertificate = insuranceCertificatePath;
+
+    // 🔟 Save updates
     await this.restaurantRepo.save(restaurant);
 
-    // Re-fetch without password
+    // 1️⃣1️⃣ Re-fetch updated restaurant without password
     const updatedRestaurant = await this.restaurantRepo.findOne({
       where: { id },
       select: {
         id: true,
         name: true,
+        ownerName: true,
         role: true,
         address: true,
         email: true,
         phone: true,
+        secondaryPhone: true,
+        cuisine: true,
+        country: true,
+        state: true,
+        city: true,
+        pincode: true,
+        deliveryTime: true,
+        description: true,
+        enableOnlineOrders: true,
+        enableTableBooking: true,
         is_verified: true,
-        image: true,
+        logo: true,
+        galleryImages: true,
+        bannerImages: true,
+        foodSafetyCertificate: true,
+        taxIdCertificate: true,
+        businessLicense: true,
+        insuranceCertificate: true,
         opening_time: true,
         closing_time: true,
+        weeklySchedule: true,
         is_active: true,
         created_at: true,
-        updated_at: true
-      }
+        updated_at: true,
+      },
     });
 
     return {
@@ -187,7 +306,6 @@ export class RestaurantService {
       data: updatedRestaurant,
     };
   }
-
 
   async remove(id: number) {
     const restaurant = await this.restaurantRepo.findOne({ where: { id } });

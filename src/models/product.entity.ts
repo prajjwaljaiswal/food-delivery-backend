@@ -1,6 +1,6 @@
 // src/Admin/product/entities/product.entity.ts
 import { Category } from './category.entity';
-import { Restaurant } from './restaurant.entity';
+import { Restaurant } from './admin-restaurant.entity';
 import {
     Entity,
     PrimaryGeneratedColumn,

@@ -1,10 +1,25 @@
 // src/driver/entities/driver.entity.ts
 
-// import { Order } from 'src/Admin/orders/entities/order.entity';
 import { IsOptional, IsString } from 'class-validator';
 import { Order } from './order.entity';
 import { RoleEntity } from './role.entity';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    OneToMany,
+    ManyToOne,
+    JoinColumn,
+} from 'typeorm';
+
+export enum DriverStatus {
+    PENDING = 'pending',   // when added but not yet approved
+    APPROVED = 'approved',
+    REJECTED = 'rejected',
+    SUSPENDED = 'suspended',
+}
 
 @Entity()
 export class Driver {
@@ -36,17 +51,57 @@ export class Driver {
     @Column({ default: true })
     isActive: boolean;
 
-
     @Column({ nullable: true })
     @IsOptional()
     @IsString()
     image?: string;
 
+    // ✅ Driver current status
+    @Column({
+        type: 'enum',
+        enum: DriverStatus,
+        default: DriverStatus.PENDING,
+    })
+    status: DriverStatus;
 
+    // ✅ Vehicle details
+    @Column({ nullable: true })
+    vehicleType: string; // e.g., Bike, Car, Van
+
+    @Column({ nullable: true, unique: true })
+    licensePlate: string;
+
+    @Column({ nullable: true })
+    insuranceNumber: string;
+
+    @Column({ nullable: true })
+    rcBookNumber: string;
+
+    // ✅ Verification documents
+    @Column({ nullable: true })
+    idProof: string; // path or url to ID proof
+
+    @Column({ nullable: true })
+    licenseDoc: string; // path or url to driving license
+
+    @Column({ nullable: true })
+    backgroundCheck: string; // path or url to background check doc
+
+    // ✅ Availability (online/offline for accepting deliveries)
     @Column({ default: false })
-    isAvailable: boolean; // for accepting new deliveries
+    isAvailable: boolean;
 
-    @OneToMany(() => Order, order => order.driver)
+    // ✅ Performance tracking
+    @Column({ default: 0 })
+    completedDeliveries: number;
+
+    @Column({ type: 'float', default: 0 })
+    averageRating: number;
+
+    @Column({ default: 0 })
+    cancellations: number;
+
+    @OneToMany(() => Order, (order) => order.driver)
     orders: Order[];
 
     @CreateDateColumn()

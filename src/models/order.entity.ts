@@ -12,7 +12,7 @@ import {
 // import { Restaurant } from '../../../Resturent-Entites/restaurant.entity';
 // import { Product } from '../../product/entities/product.entity';
 import { OrderStatus } from 'src/common/enums/order-status.enum';
-import { Restaurant } from './restaurant.entity';
+import { Restaurant } from './admin-restaurant.entity';
 import { Product } from './product.entity';
 
 @Entity({ name: 'orders' })

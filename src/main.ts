@@ -2,13 +2,27 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SeedService } from './modules/seed/seed.service';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    exceptionFactory: (errors) => {
+      const messages = errors.map(err => Object.values(err.constraints || {})).flat();
+      return new BadRequestException({
+        status: false,
+        code: 400,
+        message: messages,
+        data: null
+      });
+    }
+  }));
+
 
   const config = new DocumentBuilder()
     .setTitle('Food Delivery API')
@@ -27,7 +41,7 @@ async function bootstrap() {
 
   // ✅ Enable CORS
   app.enableCors({
-    origin: '*', 
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   });
