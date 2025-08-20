@@ -8,22 +8,23 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as express from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // ✅ Disable default body parser so Multer can handle multipart/form-data
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
 
-  // // ✅ Global ValidationPipe
-  // app.useGlobalPipes(new ValidationPipe({
-  //   whitelist: true,
-  //   transform: true,
-  //   exceptionFactory: (errors) => {
-  //     const messages = errors.map(err => Object.values(err.constraints || {})).flat();
-  //     return new BadRequestException({
-  //       status: false,
-  //       code: 400,
-  //       message: messages,
-  //       data: null
-  //     });
-  //   }
-  // }));
+  // ✅ Global ValidationPipe
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    exceptionFactory: (errors) => {
+      const messages = errors.map(err => Object.values(err.constraints || {})).flat();
+      return new BadRequestException({
+        status: false,
+        code: 400,
+        message: messages,
+        data: null
+      });
+    }
+  }));
 
   // ✅ Swagger setup
   const config = new DocumentBuilder()
@@ -46,7 +47,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // ✅ Additional ValidationPipe
+  // ✅ Additional ValidationPipe (optional)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -56,13 +57,13 @@ async function bootstrap() {
   );
 
   // ✅ Seeder
-  // const seeder = app.get(SeedService);
+  const seeder = app.get(SeedService);
 
-  // console.log('🔹 Seeding roles...');
-  // await seeder.seedRoles();
+  console.log('🔹 Seeding roles...');
+  await seeder.seedRoles();
 
-  // console.log('🔹 Seeding categories...');
-  // await seeder.seedCategories();
+  console.log('🔹 Seeding categories...');
+  await seeder.seedCategories();
 
   // ✅ Start server
   const port = process.env.PORT || 4000;

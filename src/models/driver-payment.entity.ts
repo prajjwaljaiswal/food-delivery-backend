@@ -2,7 +2,7 @@
 
 import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, CreateDateColumn } from 'typeorm';
 // import { Order } from 'src/Admin/orders/entities/order.entity';
-import { PaymentStatus } from 'src/common/enums/payment-status.enum'; import { Driver } from './driver.entity';
+import { PaymentStatus } from 'src/common/enums/payment-status.enum'; import { Driver } from './driver/driver_Info.entity';
 import { Order } from './order.entity';
 
 

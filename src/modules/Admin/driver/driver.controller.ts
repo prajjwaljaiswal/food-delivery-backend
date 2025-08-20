@@ -15,6 +15,7 @@ import { diskStorage } from 'multer';
 export class DriverController {
   constructor(private readonly driverService: DriverService) { }
 
+
   /* -------------------------- Create Driver ------------------------ */
   @Post()
   @UseInterceptors(
@@ -22,29 +23,40 @@ export class DriverController {
       storage: diskStorage({
         destination: './uploads/drivers',
         filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
         },
       }),
       fileFilter: (req, file, callback) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
-          return callback(new Error('Only JPG, JPEG, and PNG image files are allowed!'), false);
+          return callback(
+            new Error('Only JPG, JPEG, and PNG image files are allowed!'),
+            false,
+          );
         }
         callback(null, true);
       },
     }),
   )
-  async create(@Body() dto: CreateDriverDto, @UploadedFile() file?: Express.Multer.File) {
+  async create(
+    @Body() dto: CreateDriverDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
     const imagePath = file ? `/uploads/drivers/${file.filename}` : undefined;
     return this.driverService.create(dto, imagePath);
   }
 
-  /* -------------------------- List All Drivers ------------------------ */
   @Get()
-  async getAllDrivers(@Query('page') page: number, @Query('limit') limit: number, @Query('keyword') keyword?: string) {
+  async getAllDrivers(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Query('keyword') keyword?: string,
+  ) {
     return this.driverService.findAll(page, limit, { keyword });
   }
+
 
   /* -------------------------- Get One Driver ------------------------ */
   @Get(':id')
@@ -74,14 +86,20 @@ export class DriverController {
   )
   update(@Param('id') id: string, @Body() dto: UpdateDriverDto, @UploadedFile() file?: Express.Multer.File) {
     if (file) {
-      dto.image = `/uploads/drivers/${file.filename}`;
+      dto.profile = `/uploads/drivers/${file.filename}`;
     }
     return this.driverService.update(+id, dto);
   }
 
   /* -------------------------- Delete Driver ------------------------ */
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.driverService.remove(+id);
+  async remove(@Param('id') id: string) {
+    const deleted = await this.driverService.remove(+id);
+    return {
+      status: 200,
+      success: true,
+      message: deleted ? 'Driver deleted successfully' : 'Driver not found',
+    };
   }
+
 }

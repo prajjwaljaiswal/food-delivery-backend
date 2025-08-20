@@ -1,4 +1,4 @@
-// File: src/admin/driver/dto/create-driver.dto.ts
+// src/admin/driver/dto/create-driver.dto.ts
 
 import {
   IsEmail,
@@ -11,7 +11,7 @@ import {
   IsBoolean,
   IsNumber,
 } from 'class-validator';
-import { DriverStatus } from 'src/models/driver.entity';
+import { DriverStatus } from 'src/models/driver/driver_Info.entity';
 
 export class CreateDriverDto {
   @IsOptional()
@@ -23,7 +23,7 @@ export class CreateDriverDto {
   phone: string;
 
   @IsString()
-  @MinLength(6, { message: 'Password must be at least 6 characters long' })
+  @MinLength(6)
   @IsNotEmpty()
   password: string;
 
@@ -41,7 +41,7 @@ export class CreateDriverDto {
 
   @IsOptional()
   @IsString()
-  image?: string;
+  profile?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -60,6 +60,10 @@ export class CreateDriverDto {
   @IsOptional()
   @IsString()
   licensePlate?: string;
+
+   @IsOptional()
+  @IsNumber()
+  roleId?: number; 
 
   @IsOptional()
   @IsString()
@@ -82,7 +86,7 @@ export class CreateDriverDto {
   @IsString()
   backgroundCheck?: string;
 
-  // ✅ Availability (online/offline)
+  // ✅ Availability
   @IsOptional()
   @IsBoolean()
   isAvailable?: boolean;
@@ -99,4 +103,29 @@ export class CreateDriverDto {
   @IsOptional()
   @IsNumber()
   cancellations?: number;
+
+  // ✅ Earnings & Payouts
+  @IsOptional()
+  @IsNumber()
+  totalEarnings?: number;
+
+  @IsOptional()
+  @IsNumber()
+  pendingPayout?: number;
+
+  @IsOptional()
+  lastPayoutAt?: Date;
+
+  // ✅ Live location
+  @IsOptional()
+  @IsNumber()
+  currentLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  currentLng?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isOnline?: boolean;
 }

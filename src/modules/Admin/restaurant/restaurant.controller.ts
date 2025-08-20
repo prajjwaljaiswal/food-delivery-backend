@@ -15,6 +15,7 @@ import {
   Query,
   UploadedFiles,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { RestaurantService } from './restaurant.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
@@ -38,7 +39,6 @@ export class RestaurantController {
 
   /* -------------------------- Create Restaurant ------------------------ */
 
-
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -52,20 +52,20 @@ export class RestaurantController {
         { name: 'insuranceCertificate', maxCount: 1 },
       ],
       {
+
         storage: diskStorage({
           destination: './uploads/restaurants',
           filename: (req, file, callback) => {
-            const uniqueSuffix =
-              Date.now() + '-' + Math.round(Math.random() * 1e9);
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
             const ext = extname(file.originalname);
             callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
           },
         }),
         fileFilter: (req, file, callback) => {
-          // certificates may be PDF as well, so allow images + pdf
-          if (!file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/)) {
-            return callback(new Error('Only image or PDF files are allowed!'), false);
+          if (!file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/i)) {
+            return callback(new BadRequestException('Only image or PDF files are allowed!'), false);
           }
+
           callback(null, true);
         },
       },
@@ -84,37 +84,54 @@ export class RestaurantController {
       insuranceCertificate?: Express.Multer.File[];
     },
   ) {
-    console.log('FILES RECEIVED:', files);
-
+    // ✅ Single logo
     if (files?.logo?.[0]) {
       dto.logo = `/uploads/restaurants/${files.logo[0].filename}`;
     }
-    if (files?.bannerImages) {
-      dto.bannerImages = files.bannerImages.map(
-        (f) => `/uploads/restaurants/${f.filename}`,
-      );
-    }
-    if (files?.galleryImages) {
-      dto.galleryImages = files.galleryImages.map(
-        (f) => `/uploads/restaurants/${f.filename}`,
-      );
+
+    // ✅ Multiple images as string[] (TypeORM simple-json)
+    dto.bannerImages = files?.bannerImages
+      ? files.bannerImages.map(f => `/uploads/restaurants/${f.filename}`)
+      : [];
+
+    dto.galleryImages = files?.galleryImages
+      ? files.galleryImages.map(f => `/uploads/restaurants/${f.filename}`)
+      : [];
+
+    // ✅ Certificates
+    dto.foodSafetyCertificate = files?.foodSafetyCertificate?.[0]
+      ? `/uploads/restaurants/${files.foodSafetyCertificate[0].filename}`
+      : undefined;
+
+    dto.taxIdCertificate = files?.taxIdCertificate?.[0]
+      ? `/uploads/restaurants/${files.taxIdCertificate[0].filename}`
+      : undefined;
+
+    dto.businessLicense = files?.businessLicense?.[0]
+      ? `/uploads/restaurants/${files.businessLicense[0].filename}`
+      : undefined;
+
+    dto.insuranceCertificate = files?.insuranceCertificate?.[0]
+      ? `/uploads/restaurants/${files.insuranceCertificate[0].filename}`
+      : undefined;
+
+    // ✅ Description fix (array → string)
+    if (Array.isArray(dto.description)) {
+      dto.description = dto.description.join(' ');
     }
 
-    /* ------------ New Certificates ------------- */
-    if (files?.foodSafetyCertificate?.[0]) {
-      dto.foodSafetyCertificate = `/uploads/restaurants/${files.foodSafetyCertificate[0].filename}`;
+    // ✅ weeklySchedule must be object (simple-json column)
+    if (dto.weeklySchedule && typeof dto.weeklySchedule === 'string') {
+      try {
+        dto.weeklySchedule = JSON.parse(dto.weeklySchedule);
+      } catch (e) {
+        dto.weeklySchedule = {};
+      }
+    } else if (!dto.weeklySchedule) {
+      dto.weeklySchedule = {};
     }
-    if (files?.taxIdCertificate?.[0]) {
-      dto.taxIdCertificate = `/uploads/restaurants/${files.taxIdCertificate[0].filename}`;
-    }
-    if (files?.businessLicense?.[0]) {
-      dto.businessLicense = `/uploads/restaurants/${files.businessLicense[0].filename}`;
-    }
-    if (files?.insuranceCertificate?.[0]) {
-      dto.insuranceCertificate = `/uploads/restaurants/${files.insuranceCertificate[0].filename}`;
-    }
-    /* ------------------------------------------- */
 
+    // ✅ Call service to save restaurant
     return this.restaurantService.create(dto);
   }
 

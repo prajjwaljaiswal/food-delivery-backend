@@ -15,7 +15,7 @@ import { OrderStatus } from 'src/common/enums/order-status.enum';
 import { Restaurant } from './admin-restaurant.entity';
 // import { Product } from './product.entity';
 import { MenuItem } from './resturant-menu.entity';
-import { Driver } from './driver.entity';
+import { Driver } from './driver/driver_Info.entity';
 
 @Entity({ name: 'orders' })
 export class Order {

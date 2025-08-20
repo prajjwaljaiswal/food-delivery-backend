@@ -5,9 +5,10 @@ import { Like, Repository } from 'typeorm';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import * as bcrypt from 'bcrypt';
-import { UserEntity, Otp } from 'src/models';
+import { UserEntity, Otp, RoleEntity } from 'src/models';
 // import { DriverLoginDto } from './dto/driver-login.dto';
 import { Driver } from 'src/models';
+import { DriverStatus } from 'src/models/driver/driver_Info.entity';
 
 @Injectable()
 export class DriverService {
@@ -18,40 +19,66 @@ export class DriverService {
         @InjectRepository(Otp)
         private readonly otpRepo: Repository<Otp>,
 
+
+        @InjectRepository(RoleEntity)
+        private readonly roleRepo: Repository<RoleEntity>,
+
+
     ) { }
-
-
     async create(dto: CreateDriverDto, imagePath?: string) {
-        // Duplicate check — email ya phone se
+        // Include soft-deleted drivers in search
         const existingDriver = await this.driverRepo.findOne({
-            where: [
-                { email: dto.email },
-                { phone: dto.phone },
-            ],
+            where: [{ email: dto.email }, { phone: dto.phone }],
+            withDeleted: true,
         });
 
         if (existingDriver) {
-            return {
-                status: 400,
-                success: false,
-                message: 'Driver with this email or phone already exists.',
-            };
+            if (existingDriver.deletedAt) {
+                // Soft-deleted record exist karta hai → restore it
+                existingDriver.deletedAt = undefined;
+                existingDriver.name = dto.name;
+                existingDriver.address = dto.address;
+                if (dto.email) existingDriver.email = dto.email;
+                if (dto.phone) existingDriver.phone = dto.phone;
+                existingDriver.profile = imagePath;
+                existingDriver.status = DriverStatus.PENDING;
+
+                if (dto.password) {
+                    existingDriver.password = await bcrypt.hash(dto.password, 10);
+                }
+
+                const restoredDriver = await this.driverRepo.save(existingDriver);
+                delete (restoredDriver as any).password;
+                return {
+                    status: 200,
+                    success: true,
+                    message: 'Soft-deleted driver restored successfully.',
+                    data: restoredDriver,
+                };
+            } else {
+                // Already exists and not deleted
+                throw new BadRequestException('Driver with this email or phone already exists.');
+            }
         }
 
-        // Password hash
+        // Normal creation
         const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const roleId = dto.roleId || 3; // default driver role
+        const role = await this.roleRepo.findOne({ where: { id: roleId } });
 
-        // Driver create
+        if (!role) {
+            throw new BadRequestException('Invalid role ID.');
+        }
+
         const driver = this.driverRepo.create({
             ...dto,
             password: hashedPassword,
-            role: { id: 3 }, // driver role
-            image: imagePath,
+            role,
+            profile: imagePath,
+            status: DriverStatus.PENDING,
         });
 
         const savedDriver = await this.driverRepo.save(driver);
-
-        // Password ko remove karein
         delete (savedDriver as any).password;
 
         return {
@@ -61,51 +88,46 @@ export class DriverService {
             data: savedDriver,
         };
     }
-    async findAll(page: number = 1, limit: number = 10, filters?: any) {
+
+    async findAll(
+        page: number = 1,
+        limit: number = 10,
+        filter?: { keyword?: string }
+    ) {
         const skip = (page - 1) * limit;
 
-        let where: any;
+        const query = this.driverRepo.createQueryBuilder('driver')
+        // .leftJoinAndSelect('driver.role', 'role')
+        // .leftJoinAndSelect('driver.earnings', 'earnings') // optional
+        // .leftJoinAndSelect('driver.documents', 'documents') // optional
+        // .leftJoinAndSelect('driver.vehicles', 'vehicles') // optional
+        // .leftJoinAndSelect('driver.performance', 'performance') // optional
+        // .leftJoinAndSelect('driver.trackingRecords', 'tracking') // optional
+        // .leftJoinAndSelect('driver.orders', 'orders') // <-- include orders
+        // .where('role.id = :roleId', { roleId: 3 }); // only drivers
 
-        if (filters?.keyword) {
-            const keyword = `%${filters.keyword}%`;
-            // OR condition using array
-            where = [
-                { role: { id: 3 }, name: Like(keyword) },
-                { role: { id: 3 }, email: Like(keyword) },
-                { role: { id: 3 }, phone: Like(keyword) },
-            ];
-        } else {
-            // Only role = driver
-            where = { role: { id: 3 } };
+        if (filter?.keyword) {
+            query.andWhere(
+                '(driver.name LIKE :keyword OR driver.email LIKE :keyword OR driver.phone LIKE :keyword)',
+                { keyword: `%${filter.keyword}%` }
+            );
         }
-        const [drivers, total] = await this.driverRepo.findAndCount({
-            where,
-            relations: ['orders'],
-            order: { created_at: 'DESC' },
-            skip,
-            take: limit,
-            select: [
-                'id',
-                'name',
-                'role',
-                'address',
-                'email',
-                'phone',
-                'image',
-                'is_verified',
-                'isActive',
-                'isAvailable',
-                'orders',
-                'created_at',
-                'updated_at',
-            ],
+
+        query.skip(skip).take(limit).orderBy('driver.id', 'ASC');
+
+        const [drivers, total] = await query.getManyAndCount();
+
+        // Remove password before returning
+        const sanitizedDrivers = drivers.map(driver => {
+            const { password, ...rest } = driver;
+            return rest;
         });
 
         return {
             status: 200,
             success: true,
             message: 'Drivers fetched successfully.',
-            data: drivers,
+            data: sanitizedDrivers,
             pagination: {
                 total,
                 page,
@@ -118,8 +140,15 @@ export class DriverService {
 
     async findOne(id: number) {
         const driver = await this.driverRepo.findOne({
-            where: { id, role: { id: 3 } },
-            relations: ['orders'],
+            where: { id /*, role: { id: 3 } */ }, // role filter abhi comment kiya
+            // relations: [
+            //     'orders',
+            //     'earnings',
+            //     'documents',
+            //     'vehicles',
+            //     'performance',
+            //     'trackingRecords',
+            // ], // optional future joins
         });
 
         if (!driver) {
@@ -130,6 +159,7 @@ export class DriverService {
             };
         }
 
+        // Remove password before returning
         const { password, ...driverWithoutPassword } = driver;
 
         return {
@@ -163,24 +193,12 @@ export class DriverService {
         };
     }
 
-
-    async remove(id: number) {
+    async remove(id: number): Promise<boolean> {
         const driver = await this.driverRepo.findOne({ where: { id, role: { id: 3 } } });
-        if (!driver) {
-            return {
-                status: 404,
-                success: false,
-                message: 'Driver not found',
-            };
-        }
+        if (!driver) return false;
 
         await this.driverRepo.softRemove(driver);
-
-        return {
-            status: 200,
-            success: true,
-            message: 'Driver deleted successfully',
-        };
+        return true;
     }
 
 

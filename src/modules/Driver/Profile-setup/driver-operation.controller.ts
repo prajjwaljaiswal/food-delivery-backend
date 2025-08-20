@@ -41,11 +41,11 @@ export class DriverController {
         return this.restService.updateProfile(restaurantId, dto);
     }
 
-    @Post('login')
-    login(@Body() dto: LoginDriverDto, @Req() req: ExpressRequest) {
-        // console.log('Login attempt with:', dto);
-        return this.restService.loginRestaurant(dto, req);
-    }
+    // @Post('login')
+    // login(@Body() dto: LoginDriverDto, @Req() req: ExpressRequest) {
+    //     // console.log('Login attempt with:', dto);
+    //     return this.restService.loginRestaurant(dto, req);
+    // }
     @UseGuards(JwtAuthGuard)
     @Post('reset-password')
     resetPassword(

@@ -30,7 +30,7 @@ export class RestaurantService {
 
     // 2️⃣ Password hash
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-
+    console.log(dto.galleryImages, dto.bannerImages, dto.foodSafetyCertificate, dto.taxIdCertificate, dto.businessLicense, dto.insuranceCertificate)
     // 3️⃣ Create restaurant entity
     const restaurant = this.restaurantRepo.create({
       ...dto,
@@ -60,7 +60,6 @@ export class RestaurantService {
     };
   }
 
-
   async findAll(page: number = 1, limit: number = 10, filters?: any) {
     const skip = (page - 1) * limit;
 
@@ -68,7 +67,6 @@ export class RestaurantService {
 
     if (filters?.keyword) {
       const keyword = `%${filters.keyword}%`;
-      // OR condition for search
       where = [
         { name: Like(keyword) },
         { email: Like(keyword) },
@@ -83,6 +81,7 @@ export class RestaurantService {
       order: { created_at: 'DESC' },
       skip,
       take: limit,
+      relations: ['menuItems'], // ✅ include menu items if exist
       select: {
         id: true,
         name: true,
@@ -127,6 +126,7 @@ export class RestaurantService {
       },
     };
   }
+
   async findOne(id: number) {
     const restaurant = await this.restaurantRepo.findOne({
       where: { id },

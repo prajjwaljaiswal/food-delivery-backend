@@ -91,26 +91,23 @@ export class CreateRestaurantDto {
 
   @Transform(({ value }) => value === 'true' || value === true)
   enableTableBooking?: boolean;
-
   // ✅ Single logo
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => (typeof value === 'string' ? value : null))
   logo?: string;
 
   // ✅ Multiple gallery images
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @Transform(({ value }) => (Array.isArray(value) ? value : []))
   galleryImages?: string[];
 
   // ✅ Multiple banner images
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @Transform(({ value }) => (Array.isArray(value) ? value : []))
   bannerImages?: string[];
+
 
   /* ---------------- Certificates ---------------- */
   @IsOptional()

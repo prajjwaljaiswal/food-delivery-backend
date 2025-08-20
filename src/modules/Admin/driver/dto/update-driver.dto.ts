@@ -10,7 +10,7 @@ import {
   IsNumber,
   IsEnum,
 } from 'class-validator';
-import { DriverStatus } from 'src/models/driver.entity';
+import { DriverStatus } from 'src/models/driver/driver_Info.entity';
 
 export class UpdateDriverDto {
   @IsOptional()
@@ -40,11 +40,16 @@ export class UpdateDriverDto {
 
   @IsOptional()
   @IsString()
-  image?: string;
+  profile?: string;
 
   @IsOptional()
   @IsString()
   name?: string;
+
+
+  @IsOptional()
+  @IsNumber()
+  roleId?: number;
 
   // ✅ Driver status
   @IsOptional()
@@ -98,4 +103,30 @@ export class UpdateDriverDto {
   @IsOptional()
   @IsNumber()
   cancellations?: number;
+
+
+  // ✅ Earnings & Payouts
+  @IsOptional()
+  @IsNumber()
+  totalEarnings?: number;
+
+  @IsOptional()
+  @IsNumber()
+  pendingPayout?: number;
+
+  @IsOptional()
+  lastPayoutAt?: Date;
+
+  // ✅ Live location
+  @IsOptional()
+  @IsNumber()
+  currentLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  currentLng?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isOnline?: boolean;
 }

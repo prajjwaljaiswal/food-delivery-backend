@@ -6,10 +6,15 @@ import { DriverController } from './driver.controller';
 import { DriverService } from './driver.service';
 import { RoleEntity, Otp } from 'src/models';
 import { Driver } from 'src/models';
+import { DriverTracking } from 'src/models/driver/Live_location';
+import { DriverEarnings } from 'src/models/driver/driver_Earnings_payout';
+import { DriverPerformance } from 'src/models/driver/driver_Performance';
+import { DriverDocument } from 'src/models/driver/Verification_documents';
+import { Vehicle } from 'src/models/driver/Vehicle.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Driver, RoleEntity, Otp])],
+  imports: [TypeOrmModule.forFeature([Driver, RoleEntity, Otp, DriverTracking, DriverEarnings, DriverPerformance, DriverDocument, Vehicle])],
   controllers: [DriverController],
   providers: [DriverService],
 })
-export class DriverModule {}
+export class DriverModule { }

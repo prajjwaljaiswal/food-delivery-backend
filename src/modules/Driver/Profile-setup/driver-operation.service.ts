@@ -108,73 +108,73 @@ export class DriverService {
     }
 
 
-    async loginRestaurant(dto: LoginDriverDto, req: Request) {
-        const { username, password, device_token } = dto;
-        console.log('Login attempt with:', { username, password, device_token });
-        let driver: Driver | null = null;
+    // async loginRestaurant(dto: LoginDriverDto, req: Request) {
+    //     const { username, password, device_token } = dto;
+    //     console.log('Login attempt with:', { username, password, device_token });
+    //     let driver: Driver | null = null;
 
-        // Check login by email or phone
-        if (/^\S+@\S+\.\S+$/.test(username)) {
-            driver = await this.driverRepo.findOne({
-                where: { email: username },
-            });
-        } else if (/^\+?[0-9]{7,15}$/.test(username)) {
-            driver = await this.driverRepo.findOne({
-                where: { phone: username },
-            });
-        }
-        console.log('Driver found:', driver);
+    //     // Check login by email or phone
+    //     if (/^\S+@\S+\.\S+$/.test(username)) {
+    //         driver = await this.driverRepo.findOne({
+    //             where: { email: username },
+    //         });
+    //     } else if (/^\+?[0-9]{7,15}$/.test(username)) {
+    //         driver = await this.driverRepo.findOne({
+    //             where: { phone: username },
+    //         });
+    //     }
+    //     console.log('Driver found:', driver);
 
-        if (!driver) {
-            throw new UnauthorizedException('Invalid credentials');
-        }
-        const isPasswordMatch = await bcrypt.compare(password, driver.password);
-        // console.log('Password match:', isPasswordMatch);
-        if (!isPasswordMatch) {
-            throw new UnauthorizedException('Invalid credentials password not match');
-        }
+    //     if (!driver) {
+    //         throw new UnauthorizedException('Invalid credentials');
+    //     }
+    //     const isPasswordMatch = await bcrypt.compare(password, driver.password);
+    //     // console.log('Password match:', isPasswordMatch);
+    //     if (!isPasswordMatch) {
+    //         throw new UnauthorizedException('Invalid credentials password not match');
+    //     }
 
-        const ip = req.ip;
+    //     const ip = req.ip;
 
-        const token = this.jwtService.sign({
-            sub: driver.id,
-            role_id: driver.role?.id || driver.role?.slug,
-        });
+    //     const token = this.jwtService.sign({
+    //         sub: driver.id,
+    //         role_id: driver.role?.id || driver.role?.slug,
+    //     });
 
-        // Optionally save last login, IP, etc.
-        driver.updated_at = new Date();
-        await this.driverRepo.save(driver);
+    //     // Optionally save last login, IP, etc.
+    //     driver.updated_at = new Date();
+    //     await this.driverRepo.save(driver);
 
-        // ✅ Check if device_token already exists
-        const existingToken = await this.deviceTokenRepo.findOne({
-            where: { deviceToken: device_token },
-        });
+    //     // ✅ Check if device_token already exists
+    //     const existingToken = await this.deviceTokenRepo.findOne({
+    //         where: { deviceToken: device_token },
+    //     });
 
-        if (existingToken) {
-            existingToken.ipAddress = ip;
-            existingToken.jwtToken = token;
-            existingToken.restaurant_id = driver.id;
-            existingToken.role = 'Driver'; // ✅ Correct the role
-            await this.deviceTokenRepo.save(existingToken);
-        } else {
-            await this.deviceTokenRepo.save({
-                restaurant_id: driver.id,
-                deviceToken: device_token,
-                jwtToken: token,
-                ipAddress: ip,
-                role: 'Driver',
-            });
-        }
+    //     if (existingToken) {
+    //         existingToken.ipAddress = ip;
+    //         existingToken.jwtToken = token;
+    //         existingToken.restaurant_id = driver.id;
+    //         existingToken.role = 'Driver'; // ✅ Correct the role
+    //         await this.deviceTokenRepo.save(existingToken);
+    //     } else {
+    //         await this.deviceTokenRepo.save({
+    //             restaurant_id: driver.id,
+    //             deviceToken: device_token,
+    //             jwtToken: token,
+    //             ipAddress: ip,
+    //             role: 'Driver',
+    //         });
+    //     }
 
-        return {
-            message: 'Restaurant logged in successfully',
-            data: {
-                token,
-                driver,
-                ip,
-            },
-        };
-    }
+    //     return {
+    //         message: 'Restaurant logged in successfully',
+    //         data: {
+    //             token,
+    //             driver,
+    //             ip,
+    //         },
+    //     };
+    // }
     /* ------------------------ Reset Password (Restaurant) ------------------------ */
     // ✅ CORRECT
     async resetRestaurantPassword(dto: ResetPasswordDriverDto, req: Request) {
