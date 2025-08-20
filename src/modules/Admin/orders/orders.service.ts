@@ -8,20 +8,18 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UserEntity } from 'src/models';
 import { RevenueFilterDto } from './dto/revenue-filter.dto';
 import { Restaurant } from 'src/models';
-import { Product } from 'src/models';
 
 @Injectable()
 export class OrderService {
     constructor(
         @InjectRepository(Order) private orderRepo: Repository<Order>,
         @InjectRepository(Restaurant) private restRepo: Repository<Restaurant>,
-        @InjectRepository(Product) private prodRepo: Repository<Product>,
         @InjectRepository(UserEntity) private userRepo: Repository<UserEntity>,
     ) { }
 
     findAll(): Promise<Order[]> {
         return this.orderRepo.find({
-            relations: ['restaurant', 'products', 'user'],
+            relations: ['restaurant', 'user'],
             order: { createdAt: 'DESC' },
         });
     }
@@ -29,7 +27,7 @@ export class OrderService {
     async findOne(id: number): Promise<Order> {
         const order = await this.orderRepo.findOne({
             where: { id },
-            relations: ['restaurant', 'products', 'user', 'driver'],
+            relations: ['restaurant', 'user', 'driver'],
         });
 
         if (!order) throw new NotFoundException('Order not found');
@@ -76,7 +74,7 @@ export class OrderService {
     async findAllByRestaurant(restaurantId: number): Promise<Order[]> {
         const orders = await this.orderRepo.find({
             where: { restaurant: { id: restaurantId } },
-            relations: ['restaurant', 'products', 'user', 'driver'],
+            relations: ['restaurant', 'user', 'driver'],
             order: { createdAt: 'DESC' },
         });
 
@@ -97,7 +95,7 @@ export class OrderService {
         order.status = dto.status;
         return this.orderRepo.save(order);
     }
-//    OrderService Report APi 
+    //    OrderService Report APi 
     async getRevenueReport({ from, to, filter }: RevenueFilterDto) {
         // 1. Total revenue from paid orders
         const qb = this.orderRepo.createQueryBuilder('order')

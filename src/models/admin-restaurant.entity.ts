@@ -1,5 +1,4 @@
 import { Category } from './category.entity';
-import { Product } from './product.entity';
 import { Order } from './order.entity';
 import { RoleEntity } from './role.entity';
 import {
@@ -124,13 +123,12 @@ export class Restaurant {
         sunday?: { openTime: string; closeTime: string; isOpen: boolean };
     };
 
-    @OneToMany(() => Product, product => product.restaurant)
-    products: Product[];
+
 
     @OneToMany(() => Order, order => order.restaurant)
     orders: Order[];
 
-      /* ---------------- Certificates ---------------- */
+    /* ---------------- Certificates ---------------- */
     @Column({ nullable: true })
     foodSafetyCertificate?: string;   // file path or URL
 

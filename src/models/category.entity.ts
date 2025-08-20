@@ -9,7 +9,6 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { Product } from './product.entity';
 import { Restaurant } from './admin-restaurant.entity';
 import { MenuItem } from './resturant-menu.entity';
 
@@ -36,7 +35,7 @@ export class Category {
   @Column({ default: true })
   isVisible: boolean;
 
-  
+
   @OneToMany(() => MenuItem, menuItem => menuItem.category)
   menuItems: MenuItem[];
 
@@ -61,9 +60,6 @@ export class Category {
   @Column()
   restaurantId: number;
 
-  // Relation with Products
-  @OneToMany(() => Product, product => product.category)
-  products: Product[];
 
   @CreateDateColumn()
   createdAt: Date;

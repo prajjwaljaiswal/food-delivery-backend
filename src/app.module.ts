@@ -10,6 +10,7 @@ import { ResturenMainModule } from './modules/Restaurant/resturent.module';
 import { EmailModule } from './common/email/email.module';
 import { DriverMainModule } from './modules/Driver/Driver.module';
 import { AdminDashboardModule } from './modules/Admin/Dashboard/dashboad.module';
+import { MenuItemModule } from './modules/Admin/menus/Resturant-menus.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AdminDashboardModule } from './modules/Admin/Dashboard/dashboad.module'
     EmailModule,
     DriverMainModule,
     AdminDashboardModule,
+    MenuItemModule
   ],
 })
 export class AppModule { }

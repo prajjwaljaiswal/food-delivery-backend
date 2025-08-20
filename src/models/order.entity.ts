@@ -13,7 +13,9 @@ import {
 // import { Product } from '../../product/entities/product.entity';
 import { OrderStatus } from 'src/common/enums/order-status.enum';
 import { Restaurant } from './admin-restaurant.entity';
-import { Product } from './product.entity';
+// import { Product } from './product.entity';
+import { MenuItem } from './resturant-menu.entity';
+import { Driver } from './driver.entity';
 
 @Entity({ name: 'orders' })
 export class Order {
@@ -28,13 +30,13 @@ export class Order {
   restaurant: Restaurant;
 
   /* ---------------- Products in Order ---------------- */
-  @ManyToMany(() => Product, { eager: true })
+  @ManyToMany(() => MenuItem, { eager: true })
   @JoinTable()
-  products: Product[];
+  MenuItem: MenuItem[];
 
   /* ---------------- Driver / Delivery Info ---------------- */
-  @ManyToOne(() => UserEntity, { nullable: true, eager: true })
-  driver: UserEntity | null;
+  @ManyToOne(() => Driver, { nullable: true, eager: true })
+  driver: Driver | null;
 
   /* ---------------- Payment & Pricing ---------------- */
   @Column('decimal', { precision: 10, scale: 2 })

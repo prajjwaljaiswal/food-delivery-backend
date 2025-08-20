@@ -23,6 +23,7 @@ export class MenuItemService {
     // ✅ Create menu item with optional image
     async create(dto: CreateMenuItemDto, imageFile?: Express.Multer.File) {
         try {
+            // console.log("jjljl")
             // 1️⃣ Find restaurant and category (unchanged)
             const restaurant = await this.restaurantRepo.findOneBy({ id: dto.restaurantId });
             if (!restaurant) return { status: false, code: 404, message: 'Restaurant not found', data: null };

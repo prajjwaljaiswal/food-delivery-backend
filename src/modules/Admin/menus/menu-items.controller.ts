@@ -8,7 +8,7 @@ import { UpdateMenuItemDto } from './dto/update-menus.dto';
 
 @UseGuards(JwtAuthGuard, RoleGuard)
 @Roles(RoleEnum.ADMIN)
-@Controller('admin/menu-items')
+@Controller('admin/menu')
 export class MenuItemController {
     constructor(private readonly menuItemService: MenuItemService) { }
 

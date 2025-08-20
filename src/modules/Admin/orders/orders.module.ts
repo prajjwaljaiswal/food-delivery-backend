@@ -9,11 +9,10 @@ import { OrderService } from './orders.service';
 // import { Product } from '../product/entities/product.entity';
 import { UserEntity } from 'src/models';
 import { Restaurant } from 'src/models';
-import { Product } from 'src/models';
 // import { User } from 'src/admin/user/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order, Restaurant, Product,UserEntity])],
+  imports: [TypeOrmModule.forFeature([Order, Restaurant,UserEntity])],
   controllers: [OrderController],
   providers: [OrderService],
 })
