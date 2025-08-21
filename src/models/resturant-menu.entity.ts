@@ -12,11 +12,15 @@ export enum AddOnEnum {
   SAUCE = 'Sauce',
   TOPPING = 'Topping',
 }
-
 export enum DietaryTagEnum {
   VEGAN = 'Vegan',
+  VEGETARIAN = 'Vegetarian',
+  B_VEG = 'B-Veg',       // eg: Butter-Vegetarian
+  NON_VEG = 'Non-Veg',
   GLUTEN_FREE = 'Gluten-Free',
+  // you can keep adding more as needed
 }
+
 
 @Entity()
 export class MenuItem {

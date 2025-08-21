@@ -7,15 +7,16 @@ import { DriverController } from './driver-operation.controller';
 import { DriverService } from './driver-operation.service';
 import { Driver } from 'src/models';
 
-@Module({ imports: [
-    TypeOrmModule.forFeature([Driver ,DeviceToken ,UserEntity ,Otp]),
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([Driver, DeviceToken, UserEntity, Otp]),
     JwtModule.register({
-  secret: process.env.JWT_SECRET, // ✅ Make sure this is defined
-  signOptions: { expiresIn: '1d' }, // optional
-}), // add any required options here
+      secret: process.env.JWT_SECRET, // ✅ Make sure this is defined
+      signOptions: { expiresIn: '1d' }, // optional
+    }), // add any required options here
   ],
   controllers: [DriverController],
-  providers: [DriverService ,EmailService],
-  exports: [DriverService ,EmailService], // optional: if other modules need this service
+  providers: [DriverService, EmailService],
+  exports: [DriverService, EmailService], // optional: if other modules need this service
 })
-export class DriverProfileModule {}
+export class DriverProfileModule { }

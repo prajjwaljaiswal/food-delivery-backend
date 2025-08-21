@@ -10,7 +10,8 @@ import * as express from 'express';
 async function bootstrap() {
   // ✅ Disable default body parser so Multer can handle multipart/form-data
   const app = await NestFactory.create(AppModule, { bodyParser: false });
-
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
   // ✅ Global ValidationPipe
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
