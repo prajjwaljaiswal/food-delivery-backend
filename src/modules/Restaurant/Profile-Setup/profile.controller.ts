@@ -13,18 +13,18 @@ import { RestaurantService } from './profile.service';
 import { LoginDto } from './dto/Resturent-login.dto';
 import { Request as ExpressRequest } from 'express'; // ✅ use this type only for typing, not decorator
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RestaurantJwtGuard } from 'src/common/guards/restaurant-jwt.guard';
 import { RestaurantForgotPasswordDto } from './dto/restaurant-forgot-password.dto';
-import { RestaurantResetPasswordByOtpDto } from './dto/restaurant-reset-password-by-otp.dto';
 import { VerifyOtpDto } from 'src/modules/auth/dto/verify-otp.dto';
 import { ResendOtpDto } from 'src/modules/auth/dto/Resendotp.dto';
+import { RestaurantRegisterDto } from './dto/restaurant-register.dto';
 
 
 // ✅ Only logged-in restaurants allowed
 @Controller('restaurant')
 export class RestaurantController {
     constructor(private readonly restaurantService: RestaurantService) { }
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(RestaurantJwtGuard)
     @Patch('profile')
     async updateProfile(
         @Request() req,
@@ -38,7 +38,12 @@ export class RestaurantController {
     login(@Body() dto: LoginDto, @Req() req: ExpressRequest) {
         return this.restaurantService.loginRestaurant(dto, req);
     }
-    @UseGuards(JwtAuthGuard)
+
+    @Post('register')
+    register(@Body() dto: RestaurantRegisterDto) {
+        return this.restaurantService.registerRestaurant(dto);
+    }
+    @UseGuards(RestaurantJwtGuard)
     @Post('reset-password')
     resetPassword(
         @Body() dto: ResetPasswordDto,

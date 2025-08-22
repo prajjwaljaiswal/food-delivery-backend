@@ -28,6 +28,9 @@ import { EmailService } from 'src/common/email/email.service';
 import { Otp } from 'src/models';
 import { VerifyOtpDto } from 'src/modules/auth/dto/verify-otp.dto';
 import { ResendOtpDto } from 'src/modules/auth/dto/Resendotp.dto';
+import { RestaurantRegisterDto } from './dto/restaurant-register.dto';
+import { RoleEntity } from 'src/models';
+import { JwtUtil } from 'src/common/utils/jwt.util';
 
 @Injectable()
 export class RestaurantService {
@@ -49,6 +52,11 @@ export class RestaurantService {
 
         @InjectRepository(Otp)
         private readonly otpRepo: Repository<Otp>,
+
+        @InjectRepository(RoleEntity)
+        private readonly roleRepo: Repository<RoleEntity>,
+
+        private readonly jwtUtil: JwtUtil,
     ) { }
     private generateOtpCode(): string {
         return Math.floor(100000 + Math.random() * 900000).toString();
@@ -148,10 +156,11 @@ export class RestaurantService {
 
         const ip = req.ip;
 
-        const token = this.jwtService.sign({
-            sub: restaurant.id,
-            role_id: restaurant.role?.id ?? restaurant.role?.slug ?? null,
-        });
+        const token = this.jwtUtil.generateRestaurantToken(
+            restaurant.id,
+            restaurant.role?.id ?? restaurant.role?.slug ?? 2,
+            restaurant.email
+        );
 
         // Update last login info
         restaurant.updated_at = new Date();
@@ -193,6 +202,167 @@ export class RestaurantService {
                 ip,
             },
         };
+    }
+
+    /* -------------------------- Register Logic ------------------------ */
+    async registerRestaurant(dto: RestaurantRegisterDto) {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            const restaurantRepo = queryRunner.manager.getRepository(Restaurant);
+            const otpRepo = queryRunner.manager.getRepository(Otp);
+            const roleRepo = queryRunner.manager.getRepository(RoleEntity);
+
+            // ✅ Check if restaurant already exists
+            const existingRestaurant = await restaurantRepo.findOne({
+                where: [
+                    { email: dto.email },
+                    { phone: dto.phone }
+                ]
+            });
+
+            if (existingRestaurant) {
+                if (existingRestaurant.is_verified) {
+                    return {
+                        success: false,
+                        status: 400,
+                        message: 'Restaurant already registered and verified.',
+                        data: null
+                    };
+                }
+
+                // ⛔ Prevent OTP flooding
+                const recentOtp = await otpRepo.findOne({
+                    where: {
+                        email: existingRestaurant.email,
+                        otpType: 'verify',
+                        isUsed: false,
+                        expiresAt: MoreThan(new Date())
+                    },
+                    order: { id: 'DESC' }
+                });
+
+                if (recentOtp) {
+                    const secondsLeft = Math.floor((recentOtp.expiresAt.getTime() - Date.now()) / 1000);
+                    return {
+                        success: false,
+                        status: 429,
+                        message: `Please wait ${secondsLeft} seconds before requesting another OTP.`,
+                        data: null
+                    };
+                }
+
+                // ✅ Expire old OTPs
+                await otpRepo.update(
+                    { email: existingRestaurant.email, otpType: 'verify', isUsed: false },
+                    { isUsed: true }
+                );
+
+                // 🔁 Resend OTP
+                const resendOtpCode = this.generateOtpCode();
+                await otpRepo.save({
+                    email: existingRestaurant.email,
+                    otpCode: resendOtpCode,
+                    otpType: 'verify',
+                    expiresAt: this.getOtpExpiry(),
+                    otpableType: 'Restaurant',
+                });
+
+                await queryRunner.commitTransaction();
+
+                // 📧 Send email (after commit)
+                try {
+                    await this.emailService.sendTemplateNotification({
+                        user: existingRestaurant,
+                        template: 'welcome-email',
+                        data: { otp: resendOtpCode },
+                    });
+                } catch (emailErr) {
+                    console.error('Failed to send verification email', emailErr);
+                }
+
+                return {
+                    success: true,
+                    status: 200,
+                    message: 'OTP resent to your email.',
+                    data: { email: existingRestaurant.email }
+                };
+            }
+
+            // 🆕 Create new restaurant
+            const hashedPassword = await bcrypt.hash(dto.password, parseInt(process.env.BCRYPT_SALT_ROUNDS || '10'));
+            
+            // Get restaurant role (assuming role ID 2 is for restaurants)
+            const restaurantRole = await roleRepo.findOne({ where: { id: 2 } });
+            if (!restaurantRole) {
+                return {
+                    success: false,
+                    status: 400,
+                    message: 'Restaurant role not found.',
+                    data: null
+                };
+            }
+
+            const newRestaurant = restaurantRepo.create({
+                ...dto,
+                password: hashedPassword,
+                role: restaurantRole,
+                is_verified: false,
+                is_active: true,
+            });
+
+            await restaurantRepo.save(newRestaurant);
+
+            // 🔐 Generate OTP
+            const otpCode = this.generateOtpCode();
+            await otpRepo.save({
+                email: newRestaurant.email,
+                otpCode,
+                otpType: 'verify',
+                expiresAt: this.getOtpExpiry(),
+                otpableType: 'Restaurant',
+            });
+
+            await queryRunner.commitTransaction();
+
+            // 📧 Send OTP after commit
+            try {
+                await this.emailService.sendTemplateNotification({
+                    user: newRestaurant,
+                    template: 'welcome-email',
+                    data: { otp: otpCode },
+                });
+            } catch (emailErr) {
+                console.error('Failed to send verification email', emailErr);
+            }
+
+            // Remove sensitive fields before sending
+            const { password: _, ...safeRestaurant } = newRestaurant;
+
+            return {
+                success: true,
+                status: 201,
+                message: 'Restaurant registered successfully. Please check your email for verification OTP.',
+                data: { 
+                    restaurant: safeRestaurant,
+                    email: newRestaurant.email 
+                }
+            };
+
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            console.error('Restaurant registration error:', error);
+            return {
+                success: false,
+                status: 500,
+                message: 'Failed to register restaurant.',
+                data: null
+            };
+        } finally {
+            await queryRunner.release();
+        }
     }
     /* ------------------------ Reset Password (Restaurant) ------------------------ */
     // ✅ CORRECT
@@ -262,53 +432,111 @@ export class RestaurantService {
             const otpRepo = queryRunner.manager.getRepository(Otp);
             const deviceTokenRepo = queryRunner.manager.getRepository(DeviceToken);
 
-            const restaurant = await restaurantRepo.findOneOrFail({
-                where: { email: dto.email }
+            const restaurant = await restaurantRepo.findOne({
+                where: { email: dto.email },
+                relations: ['role'],
             });
+
+            if (!restaurant) {
+                return {
+                    success: false,
+                    status: 404,
+                    message: 'Restaurant not found.',
+                    data: null
+                };
+            }
+
             const otp = await otpRepo.findOne({
                 where: {
                     otpCode: dto.otp_code,
                     email: dto.email,
-                    otpType: dto.otp_type, // should be 'restaurant_forgot_password'
+                    otpType: dto.otp_type,
                 },
                 order: { id: 'DESC' },
             });
-            console.log(otp, "otp in verifyRestaurantOtp") // ✅ Debugging line
 
-            if (!otp) throw new BadRequestException('Invalid OTP');
-            if (otp.expiresAt < new Date()) throw new BadRequestException('OTP expired');
-            if (otp.isUsed) throw new BadRequestException('OTP already used');
+            if (!otp) {
+                return {
+                    success: false,
+                    status: 400,
+                    message: 'Invalid OTP.',
+                    data: null
+                };
+            }
 
+            if (otp.expiresAt < new Date()) {
+                return {
+                    success: false,
+                    status: 400,
+                    message: 'OTP expired.',
+                    data: null
+                };
+            }
+
+            if (otp.isUsed) {
+                return {
+                    success: false,
+                    status: 400,
+                    message: 'OTP already used.',
+                    data: null
+                };
+            }
+
+            // ✅ Mark OTP as used
             otp.isUsed = true;
             await otpRepo.save(otp);
 
             const ipAddress = req.ip;
 
-            const token = this.jwtService.sign({
-                sub: restaurant.id,
-                role_id: restaurant.role?.id || restaurant.role?.slug,
-            });
+            const token = this.jwtUtil.generateRestaurantToken(
+                restaurant.id,
+                Number(restaurant.role?.id || restaurant.role?.slug || 2),
+                restaurant.email
+            );
+
+            // ✅ Verify restaurant if needed
+            if (dto.otp_type === 'verify') {
+                restaurant.is_verified = true;
+                await restaurantRepo.save(restaurant);
+            }
+
+            // ✅ Save device token
             await this.saveDeviceTokenWithRunner(
                 restaurant,
                 dto.device_token ?? '',
                 ipAddress ?? '',
                 token,
                 deviceTokenRepo,
-                'Restaurant' // ✅ Yeh 6th argument pass karo
+                'Restaurant'
             );
-
 
             await queryRunner.commitTransaction();
 
+            // Remove sensitive fields before sending
+            const { password: _, ...safeRestaurant } = restaurant;
+
             return {
-                message: 'OTP verified successfully',
-                token,
-                restaurant,
+                success: true,
+                status: 200,
+                message: dto.otp_type === 'verify' 
+                    ? 'Restaurant verified successfully.' 
+                    : 'OTP verified successfully.',
+                data: {
+                    token,
+                    restaurant: safeRestaurant,
+                    ip: ipAddress,
+                }
             };
 
-        } catch (err) {
+        } catch (error) {
             await queryRunner.rollbackTransaction();
-            throw new InternalServerErrorException('Something went wrong', err.message);
+            console.error('Restaurant OTP verification error:', error);
+            return {
+                success: false,
+                status: 500,
+                message: 'Failed to verify OTP.',
+                data: null
+            };
         } finally {
             await queryRunner.release();
         }
