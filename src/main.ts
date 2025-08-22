@@ -10,7 +10,8 @@ import * as express from 'express';
 async function bootstrap() {
   // ✅ Disable default body parser so Multer can handle multipart/form-data
   const app = await NestFactory.create(AppModule, { bodyParser: false });
-
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
   // ✅ Global ValidationPipe
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
@@ -41,11 +42,18 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // ✅ Enable CORS
+  // app.enableCors({
+  //   origin: '*',
+  //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  //   credentials: true,
+  // });
+
   app.enableCors({
-    origin: '*',
+    origin: 'http://localhost:3000', // your frontend URL
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    credentials: true,
+    credentials: true,               // allows cookies/auth headers
   });
+
 
   // ✅ Additional ValidationPipe (optional)
   app.useGlobalPipes(

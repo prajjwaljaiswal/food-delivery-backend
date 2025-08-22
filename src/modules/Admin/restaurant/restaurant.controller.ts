@@ -257,7 +257,17 @@ export class RestaurantController {
     /* ------------------------------------------- */
 
     // 4️⃣ Call service update method
-    return this.restaurantService.update(id, dto);
+    return this.restaurantService.update(id, {
+      ...dto,
+      logo: files.logo?.[0] ? `/uploads/restaurants/${files.logo[0].filename}` : undefined,
+      bannerImages: files.bannerImages?.map(f => `/uploads/restaurants/${f.filename}`) || undefined,
+      galleryImages: files.galleryImages?.map(f => `/uploads/restaurants/${f.filename}`) || undefined,
+      foodSafetyCertificate: files.foodSafetyCertificate?.[0] ? `/uploads/restaurants/${files.foodSafetyCertificate[0].filename}` : undefined,
+      taxIdCertificate: files.taxIdCertificate?.[0] ? `/uploads/restaurants/${files.taxIdCertificate[0].filename}` : undefined,
+      businessLicense: files.businessLicense?.[0] ? `/uploads/restaurants/${files.businessLicense[0].filename}` : undefined,
+      insuranceCertificate: files.insuranceCertificate?.[0] ? `/uploads/restaurants/${files.insuranceCertificate[0].filename}` : undefined,
+    });
+
   }
 
 

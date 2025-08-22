@@ -18,8 +18,8 @@ import {
 import { DriverTracking } from './Live_location';
 import { DriverEarnings } from './driver_Earnings_payout';
 import { DriverPerformance } from './driver_Performance';
-import { DriverDocument } from './Verification_documents';
 import { Vehicle } from './Vehicle.entity';
+import { VerificationDocument } from './Verification_documents.entites';
 
 export enum DriverStatus {
     PENDING = 'pending',   // when added but not yet approved
@@ -50,7 +50,7 @@ export class Driver {
     @Column()
     password: string;
 
-    @ManyToOne(() => RoleEntity, {  onDelete: 'SET NULL' })
+    @ManyToOne(() => RoleEntity, { onDelete: 'SET NULL' })
     @JoinColumn({ name: 'role_id' })
     role: RoleEntity;
 
@@ -72,6 +72,26 @@ export class Driver {
     @IsString()
     profile?: string;
 
+    @Column({ nullable: true })
+    gender?: string;  // e.g., 'male', 'female', 'other'
+
+    @Column({ type: 'date', nullable: true })
+    dob?: Date;
+
+    @Column({ nullable: true })
+    city?: string;
+
+    @Column({ nullable: true })
+    state?: string;
+
+
+    @Column()
+    type: string; // Bike, Car, Van
+
+
+
+    @Column({ nullable: true })
+    pincode?: string;
     // ✅ Driver current status
     @Column({
         type: 'enum',
@@ -88,10 +108,8 @@ export class Driver {
     @OneToMany(() => Vehicle, (vehicle) => vehicle.driver)
     vehicles: Vehicle[];
 
-    // ✅ Verification documents
-    @OneToMany(() => DriverDocument, (doc) => doc.driver)
-    documents: DriverDocument[];
-
+    @OneToMany(() => VerificationDocument, (doc) => doc.driver, { cascade: true })
+    verificationDocuments: VerificationDocument[];
     // Earnings & Payout
     @OneToMany(() => DriverEarnings, earning => earning.driver)
     earnings: DriverEarnings[];

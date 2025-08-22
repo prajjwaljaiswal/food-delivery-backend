@@ -358,7 +358,7 @@ export class AuthService {
     const { username, password, device_token } = dto;
 
     let user: UserEntity | null = null;
-
+console.log( username, password, device_token ,"")
     // ✅ Check email or phone format
     if (/^\S+@\S+\.\S+$/.test(username)) {
       user = await this.userRepo.findOne({
