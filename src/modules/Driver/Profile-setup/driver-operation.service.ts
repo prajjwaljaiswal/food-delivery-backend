@@ -274,7 +274,6 @@
 
 //             const ipAddress = req.ip;
 
-<<<<<<< Updated upstream
 //             const token = this.jwtService.sign({
 //                 sub: driver.id,
 //                 role_id: driver.role?.id || driver.role?.slug,
@@ -287,22 +286,6 @@
 //                 deviceTokenRepo,
 //                 'Driver' // ✅ Yeh 6th argument pass karo
 //             );
-=======
-            const token = this.jwtService.sign({
-                sub: driver.id,
-                role_id: driver.role?.id || driver.role?.slug,
-                type: 'driver',
-                email: driver.email,
-            });
-            await this.saveDeviceTokenWithRunner(
-                driver,
-                dto.device_token ?? '',
-                ipAddress ?? '',
-                token,
-                deviceTokenRepo,
-                'Driver' // ✅ Yeh 6th argument pass karo
-            );
->>>>>>> Stashed changes
 
 
 //             await queryRunner.commitTransaction();
