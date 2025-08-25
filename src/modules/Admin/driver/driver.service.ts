@@ -1,7 +1,7 @@
 
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { Like, Not, Repository } from 'typeorm';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import * as bcrypt from 'bcrypt';
@@ -13,6 +13,8 @@ import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { CreateVerificationDocumentDto } from './dto/create-driver-verification.dto';
 import { Vehicle } from 'src/models/driver/Vehicle.entity';
 import { VerificationDocument } from 'src/models/driver/Verification_documents.entites';
+import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+import { UpdateVerificationDocumentDto } from './dto/update-verification-document.dto';
 
 @Injectable()
 export class DriverService {
@@ -260,15 +262,8 @@ export class DriverService {
 
     async findOne(id: number) {
         const driver = await this.driverRepo.findOne({
-            where: { id /*, role: { id: 3 } */ }, // role filter abhi comment kiya
-            // relations: [
-            //     'orders',
-            //     'earnings',
-            //     'documents',
-            //     'vehicles',
-            //     'performance',
-            //     'trackingRecords',
-            // ], // optional future joins
+            where: { id },
+            relations: ['vehicles', 'verificationDocuments'], // include vehicles & docs
         });
 
         if (!driver) {
@@ -279,19 +274,64 @@ export class DriverService {
             };
         }
 
-        // Remove password before returning
+        // Remove password
         const { password, ...driverWithoutPassword } = driver;
+
+        // Format like getAllDrivers
+        const formattedDriver = {
+            id: driverWithoutPassword.id,
+            name: driverWithoutPassword.name,
+            phone: driverWithoutPassword.phone,
+            email: driverWithoutPassword.email,
+            isActive: driverWithoutPassword.isActive,
+            profile: driverWithoutPassword.profile,
+            gender: driverWithoutPassword.gender,
+            address: driverWithoutPassword.address,
+            city: driverWithoutPassword.city,
+            state: driverWithoutPassword.state,
+            dob: driverWithoutPassword.dob,
+            pincode: driverWithoutPassword.pincode,
+            vehicles: driverWithoutPassword.vehicles?.map(v => ({
+                id: v.id,
+                type: v.type,
+                licensePlate: v.licensePlate,
+                model: v.model,
+                color: v.color,
+                year: v.year,
+                insuranceNumber: v.insuranceNumber,
+                vehicleRC: v.rcBookNumber
+            })) || [],
+            documents: driverWithoutPassword.verificationDocuments?.map(d => ({
+                id: d.id,
+                drivingLicense: d.drivingLicense,
+                idProof: d.idProof,
+                backgroundCheck: d.backgroundCheck,
+                addressProof: d.addressProof,
+            })) || [],
+        };
 
         return {
             status: 200,
             success: true,
             message: 'Driver fetched successfully',
-            data: driverWithoutPassword,
+            data: formattedDriver,
         };
     }
 
-    async update(id: number, updateDriverDto: UpdateDriverDto) {
-        const driver = await this.driverRepo.findOne({ where: { id, role: { id: 3 } } });
+
+    async update(
+        id: number,
+        dto: UpdateDriverDto,
+        profilePath?: string,
+        vehicleDto?: UpdateVehicleDto,
+        documentDto?: UpdateVerificationDocumentDto
+    ) {
+        // 1️⃣ Driver find karo with relations
+        const driver = await this.driverRepo.findOne({
+            where: { id, role: { id: 3 } },
+            relations: ['vehicles', 'verificationDocuments']
+        });
+
         if (!driver) {
             return {
                 status: 404,
@@ -300,18 +340,90 @@ export class DriverService {
             };
         }
 
-        const updatedDriver = Object.assign(driver, updateDriverDto);
-        const savedDriver = await this.driverRepo.save(updatedDriver);
+        // 2️⃣ Unique fields ka validation
+        if (dto.email) {
+            const existingEmail = await this.driverRepo.findOne({ where: { email: dto.email, id: Not(id) } });
+            if (existingEmail) {
+                return {
+                    status: 409,
+                    success: false,
+                    message: 'Email already exists for another driver',
+                };
+            }
+        }
 
-        const { password, ...driverWithoutPassword } = savedDriver;
+        if (dto.phone) {
+            const existingPhone = await this.driverRepo.findOne({ where: { phone: dto.phone, id: Not(id) } });
+            if (existingPhone) {
+                return {
+                    status: 409,
+                    success: false,
+                    message: 'Phone number already exists for another driver',
+                };
+            }
+        }
+
+        // Agar vehicleDto me licensePlate ya koi aur unique field hai:
+        if (vehicleDto?.licensePlate) {
+            const existingVehicle = await this.vehicleRepo.findOne({
+                where: { licensePlate: vehicleDto.licensePlate, driver: { id: Not(id) } },
+            });
+            if (existingVehicle) {
+                return {
+                    status: 409,
+                    success: false,
+                    message: 'Vehicle with this license plate already exists for another driver',
+                };
+            }
+        }
+
+        // 3️⃣ Driver info update karo
+        Object.assign(driver, dto);
+        if (profilePath) driver.profile = profilePath;
+        if (dto.password) {
+            driver.password = await bcrypt.hash(dto.password, 10);
+        }
+
+        const updatedDriver = await this.driverRepo.save(driver);
+
+        // 4️⃣ Vehicles update/create
+        let vehicle: Vehicle | undefined;
+        if (vehicleDto) {
+            if (driver.vehicles?.length) {
+                vehicle = driver.vehicles[0];
+                Object.assign(vehicle, vehicleDto);
+                vehicle = await this.vehicleRepo.save(vehicle);
+            } else {
+                vehicle = this.vehicleRepo.create({ ...vehicleDto, driver });
+                vehicle = await this.vehicleRepo.save(vehicle);
+            }
+        }
+
+        // 5️⃣ Documents update/create
+        let document: VerificationDocument | undefined;
+        if (documentDto) {
+            if (driver.verificationDocuments?.length) {
+                document = driver.verificationDocuments[0];
+                Object.assign(document, documentDto);
+                document = await this.documentRepo.save(document);
+            } else {
+                document = this.documentRepo.create({ ...documentDto, driver, driverId: driver.id });
+                document = await this.documentRepo.save(document);
+            }
+        }
+
+        const { password, ...driverWithoutPassword } = updatedDriver;
 
         return {
             status: 200,
             success: true,
-            message: 'Driver updated successfully',
-            data: driverWithoutPassword,
+            message: 'Driver, vehicle, and documents updated successfully.',
+            data: { driver: driverWithoutPassword, vehicle, document },
         };
     }
+
+
+
 
     // async remove(id: number): Promise<boolean> {
     //     const driver = await this.driverRepo.findOne({ where: { id, role: { id: 3 } } });
