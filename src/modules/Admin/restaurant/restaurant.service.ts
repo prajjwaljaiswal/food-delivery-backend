@@ -100,14 +100,18 @@ export class RestaurantService {
         description: true,
         enableOnlineOrders: true,
         enableTableBooking: true,
+        taxIdCertificate: true,
         is_verified: true,
         logo: true,
         weeklySchedule: true,
         galleryImages: true,
+        foodSafetyCertificate: true,
         bannerImages: true,
         opening_time: true,
         closing_time: true,
         is_active: true,
+        businessLicense: true,
+        insuranceCertificate: true,
         created_at: true,
         updated_at: true,
       },
@@ -130,6 +134,7 @@ export class RestaurantService {
   async findOne(id: number) {
     const restaurant = await this.restaurantRepo.findOne({
       where: { id },
+      relations: ['menuItems'], // ✅ include menu items
       select: {
         id: true,
         name: true,
@@ -142,16 +147,23 @@ export class RestaurantService {
         cuisine: true,
         country: true,
         state: true,
+
         city: true,
         pincode: true,
         deliveryTime: true,
         description: true,
         enableOnlineOrders: true,
+        insuranceCertificate: true,
+        foodSafetyCertificate: true,
+        businessLicense: true,
+        taxIdCertificate: true,
         enableTableBooking: true,
         is_verified: true,
         logo: true,
+        weeklySchedule: true,  // ✅ included
         galleryImages: true,
         bannerImages: true,
+
         opening_time: true,
         closing_time: true,
         is_active: true,
@@ -176,20 +188,14 @@ export class RestaurantService {
       data: restaurant,
     };
   }
+
+
   async update(
     id: number,
     dto: UpdateRestaurantDto,
-    logoPath?: string,
-    galleryPaths?: string[],
-    bannerPaths?: string[],
-    foodSafetyCertificatePath?: string,
-    taxIdCertificatePath?: string,
-    businessLicensePath?: string,
-    insuranceCertificatePath?: string,
   ) {
     // 1️⃣ Find existing restaurant
     const restaurant = await this.restaurantRepo.findOne({ where: { id } });
-
     if (!restaurant) {
       return {
         status: 404,
@@ -231,7 +237,7 @@ export class RestaurantService {
       restaurant.password = await bcrypt.hash(dto.password, 10);
     }
 
-    // 6️⃣ Merge weeklySchedule if provided
+    // 6️⃣ Merge or replace weeklySchedule
     if (dto.weeklySchedule) {
       restaurant.weeklySchedule = {
         ...(restaurant.weeklySchedule || {}),
@@ -239,26 +245,22 @@ export class RestaurantService {
       };
     }
 
-    // 7️⃣ Set boolean fields with defaults
+    // 7️⃣ Boolean fields
     restaurant.enableOnlineOrders = dto.enableOnlineOrders ?? restaurant.enableOnlineOrders ?? false;
     restaurant.enableTableBooking = dto.enableTableBooking ?? restaurant.enableTableBooking ?? false;
 
-    // 8️⃣ Update images
-    if (logoPath) restaurant.logo = logoPath;
-    if (galleryPaths && galleryPaths.length > 0) {
-      restaurant.galleryImages = [...(restaurant.galleryImages || []), ...galleryPaths];
-    }
-    if (bannerPaths && bannerPaths.length > 0) {
-      restaurant.bannerImages = [...(restaurant.bannerImages || []), ...bannerPaths];
-    }
+    // 8️⃣ Replace images if new ones uploaded
+    if (dto.logo) restaurant.logo = dto.logo;
+    if (dto.galleryImages) restaurant.galleryImages = dto.galleryImages;
+    if (dto.bannerImages) restaurant.bannerImages = dto.bannerImages;
 
-    // 9️⃣ Update certificate files
-    if (foodSafetyCertificatePath) restaurant.foodSafetyCertificate = foodSafetyCertificatePath;
-    if (taxIdCertificatePath) restaurant.taxIdCertificate = taxIdCertificatePath;
-    if (businessLicensePath) restaurant.businessLicense = businessLicensePath;
-    if (insuranceCertificatePath) restaurant.insuranceCertificate = insuranceCertificatePath;
+    // 9️⃣ Replace certificates if new ones uploaded
+    if (dto.foodSafetyCertificate) restaurant.foodSafetyCertificate = dto.foodSafetyCertificate;
+    if (dto.taxIdCertificate) restaurant.taxIdCertificate = dto.taxIdCertificate;
+    if (dto.businessLicense) restaurant.businessLicense = dto.businessLicense;
+    if (dto.insuranceCertificate) restaurant.insuranceCertificate = dto.insuranceCertificate;
 
-    // 🔟 Save updates
+    // 🔟 Save updated restaurant
     await this.restaurantRepo.save(restaurant);
 
     // 1️⃣1️⃣ Re-fetch updated restaurant without password
@@ -306,6 +308,7 @@ export class RestaurantService {
       data: updatedRestaurant,
     };
   }
+
 
   async remove(id: number) {
     const restaurant = await this.restaurantRepo.findOne({ where: { id } });

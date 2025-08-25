@@ -1,5 +1,6 @@
 // src/admin/driver/dto/create-driver.dto.ts
 
+import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
@@ -10,6 +11,7 @@ import {
   MinLength,
   IsBoolean,
   IsNumber,
+  IsDate,
 } from 'class-validator';
 import { DriverStatus } from 'src/models/driver/driver_Info.entity';
 
@@ -22,9 +24,21 @@ export class CreateDriverDto {
   @IsNotEmpty()
   phone: string;
 
+  @IsOptional() @IsString() vehicleType?: string;
+  @IsOptional() @IsString() vehicleModel?: string;
+  @IsOptional() @IsString() vehicleColor?: string;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  vehicleYear?: number;
+
+  @IsOptional() @IsString() licensePlate?: string;
+  @IsOptional() @IsString() insuranceNumber?: string;
+  @IsOptional() @IsString() rcBookNumber?: string;
+
   @IsString()
-  @MinLength(6)
   @IsNotEmpty()
+  @MinLength(6, { message: 'Password must be at least 6 characters long' })
   password: string;
 
   @IsString()
@@ -52,31 +66,35 @@ export class CreateDriverDto {
   @IsEnum(DriverStatus)
   status?: DriverStatus;
 
-  // ✅ Vehicle details
-  @IsOptional()
-  @IsString()
-  vehicleType?: string;
 
   @IsOptional()
-  @IsString()
-  licensePlate?: string;
-
-   @IsOptional()
   @IsNumber()
-  roleId?: number; 
+  roleId?: number;
 
-  @IsOptional()
-  @IsString()
-  insuranceNumber?: string;
-
-  @IsOptional()
-  @IsString()
-  rcBookNumber?: string;
 
   // ✅ Verification documents
   @IsOptional()
   @IsString()
-  idProof?: string;
+  idProof?: string; @IsOptional()
+  @IsString()
+  gender?: string;  // e.g., 'male', 'female', 'other'
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  dob?: Date;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  pincode?: string;
 
   @IsOptional()
   @IsString()

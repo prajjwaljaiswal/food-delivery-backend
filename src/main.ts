@@ -42,11 +42,18 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // ✅ Enable CORS
+  // app.enableCors({
+  //   origin: '*',
+  //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  //   credentials: true,
+  // });
+
   app.enableCors({
-    origin: '*',
+    origin: 'http://localhost:3000', // your frontend URL
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    credentials: true,
+    credentials: true,               // allows cookies/auth headers
   });
+
 
   // ✅ Additional ValidationPipe (optional)
   app.useGlobalPipes(

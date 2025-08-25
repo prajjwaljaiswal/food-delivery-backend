@@ -1,7 +1,7 @@
 
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { Like, Not, Repository } from 'typeorm';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import * as bcrypt from 'bcrypt';
@@ -9,6 +9,12 @@ import { UserEntity, Otp, RoleEntity } from 'src/models';
 // import { DriverLoginDto } from './dto/driver-login.dto';
 import { Driver } from 'src/models';
 import { DriverStatus } from 'src/models/driver/driver_Info.entity';
+import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { CreateVerificationDocumentDto } from './dto/create-driver-verification.dto';
+import { Vehicle } from 'src/models/driver/Vehicle.entity';
+import { VerificationDocument } from 'src/models/driver/Verification_documents.entites';
+import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+import { UpdateVerificationDocumentDto } from './dto/update-verification-document.dto';
 
 @Injectable()
 export class DriverService {
@@ -22,133 +28,242 @@ export class DriverService {
 
         @InjectRepository(RoleEntity)
         private readonly roleRepo: Repository<RoleEntity>,
+        @InjectRepository(Vehicle) private readonly vehicleRepo: Repository<Vehicle>,
+        @InjectRepository(VerificationDocument) private readonly documentRepo: Repository<VerificationDocument>,
 
 
     ) { }
-    async create(dto: CreateDriverDto, imagePath?: string) {
-        // Include soft-deleted drivers in search
-        const existingDriver = await this.driverRepo.findOne({
+    // async create(dto: CreateDriverDto, imagePath?: string) {
+    //     // Include soft-deleted drivers in search
+    //     const existingDriver = await this.driverRepo.findOne({
+    //         where: [{ email: dto.email }, { phone: dto.phone }],
+    //         withDeleted: true,
+    //     });
+
+    //     if (existingDriver) {
+    //         if (existingDriver.deletedAt) {
+    //             // Soft-deleted record exists → restore it
+    //             existingDriver.deletedAt = undefined;
+    //             existingDriver.name = dto.name;
+    //             existingDriver.address = dto.address;
+    //             if (dto.email) existingDriver.email = dto.email;
+    //             if (dto.phone) existingDriver.phone = dto.phone;
+    //             existingDriver.profile = imagePath;
+    //             existingDriver.status = DriverStatus.PENDING;
+
+    //             // New fields
+    //             existingDriver.gender = dto.gender;
+    //             existingDriver.dob = dto.dob;
+    //             existingDriver.city = dto.city;
+    //             existingDriver.state = dto.state;
+    //             existingDriver.pincode = dto.pincode;
+
+    //             if (dto.password) {
+    //                 existingDriver.password = await bcrypt.hash(dto.password, 10);
+    //             }
+
+    //             const restoredDriver = await this.driverRepo.save(existingDriver);
+    //             delete (restoredDriver as any).password;
+
+    //             return {
+    //                 status: 200,
+    //                 success: true,
+    //                 message: 'Soft-deleted driver restored successfully.',
+    //                 data: restoredDriver,
+    //             };
+    //         } else {
+    //             // Already exists and not deleted
+    //             throw new BadRequestException('Driver with this email or phone already exists.');
+    //         }
+    //     }
+
+    //     // Normal creation
+    //     const hashedPassword = await bcrypt.hash(dto.password, 10);
+    //     const roleId = dto.roleId || 3; // default driver role
+    //     const role = await this.roleRepo.findOne({ where: { id: roleId } });
+
+    //     if (!role) {
+    //         throw new BadRequestException('Invalid role ID.');
+    //     }
+
+    //     const driver = this.driverRepo.create({
+    //         ...dto,
+    //         password: hashedPassword,
+    //         role,
+    //         profile: imagePath,
+    //         status: DriverStatus.PENDING,
+    //     });
+
+    //     // Ensure new fields are explicitly included in case dto spread misses anything
+    //     driver.gender = dto.gender;
+    //     driver.dob = dto.dob;
+    //     driver.city = dto.city;
+    //     driver.state = dto.state;
+    //     driver.pincode = dto.pincode;
+
+    //     const savedDriver = await this.driverRepo.save(driver);
+    //     delete (savedDriver as any).password;
+
+    //     return {
+    //         status: 201,
+    //         success: true,
+    //         message: 'Driver created successfully.',
+    //         data: savedDriver,
+    //     };
+    // }
+
+
+    async create(
+        dto: CreateDriverDto,
+        profilePath?: string,
+        vehicleDto?: CreateVehicleDto,
+        documentDto?: CreateVerificationDocumentDto,
+    ) {
+        // 1️⃣ Driver creation (existing/restore/new)
+        let driver = await this.driverRepo.findOne({
             where: [{ email: dto.email }, { phone: dto.phone }],
             withDeleted: true,
         });
 
-        if (existingDriver) {
-            if (existingDriver.deletedAt) {
-                // Soft-deleted record exist karta hai → restore it
-                existingDriver.deletedAt = undefined;
-                existingDriver.name = dto.name;
-                existingDriver.address = dto.address;
-                if (dto.email) existingDriver.email = dto.email;
-                if (dto.phone) existingDriver.phone = dto.phone;
-                existingDriver.profile = imagePath;
-                existingDriver.status = DriverStatus.PENDING;
-
-                if (dto.password) {
-                    existingDriver.password = await bcrypt.hash(dto.password, 10);
-                }
-
-                const restoredDriver = await this.driverRepo.save(existingDriver);
-                delete (restoredDriver as any).password;
-                return {
-                    status: 200,
-                    success: true,
-                    message: 'Soft-deleted driver restored successfully.',
-                    data: restoredDriver,
-                };
-            } else {
-                // Already exists and not deleted
-                throw new BadRequestException('Driver with this email or phone already exists.');
-            }
+        if (driver) {
+            // restore/update driver
+            if (!driver.deletedAt) throw new BadRequestException('Driver already exists');
+            driver.deletedAt = undefined;
+            driver = Object.assign(driver, dto, { profile: profilePath, status: DriverStatus.PENDING });
+            if (dto.password) driver.password = await bcrypt.hash(dto.password, 10);
+            driver = await this.driverRepo.save(driver);
+        } else {
+            const hashedPassword = await bcrypt.hash(dto.password, 10);
+            const role = await this.roleRepo.findOne({ where: { id: dto.roleId || 3 } });
+            if (!role) throw new BadRequestException('Invalid role ID');
+            driver = this.driverRepo.create({ ...dto, password: hashedPassword, role, profile: profilePath, status: DriverStatus.PENDING });
+            driver = await this.driverRepo.save(driver);
         }
 
-        // Normal creation
-        const hashedPassword = await bcrypt.hash(dto.password, 10);
-        const roleId = dto.roleId || 3; // default driver role
-        const role = await this.roleRepo.findOne({ where: { id: roleId } });
+        delete (driver as any).password;
 
-        if (!role) {
-            throw new BadRequestException('Invalid role ID.');
+        // 2️⃣ Vehicle creation if provided
+        let vehicle: Vehicle | undefined;
+        if (vehicleDto) {
+            vehicle = this.vehicleRepo.create({ ...vehicleDto, driver });
+            vehicle = await this.vehicleRepo.save(vehicle);
         }
 
-        const driver = this.driverRepo.create({
-            ...dto,
-            password: hashedPassword,
-            role,
-            profile: imagePath,
-            status: DriverStatus.PENDING,
-        });
-
-        const savedDriver = await this.driverRepo.save(driver);
-        delete (savedDriver as any).password;
+        // 3️⃣ Verification document creation if provided
+        let document: VerificationDocument | undefined;
+        if (documentDto) {
+            document = this.documentRepo.create({ ...documentDto, driver, driverId: driver.id });
+            document = await this.documentRepo.save(document);
+        }
 
         return {
             status: 201,
             success: true,
-            message: 'Driver created successfully.',
-            data: savedDriver,
+            message: 'Driver, vehicle, and documents created successfully.',
+            data: { driver, vehicle, document },
         };
     }
 
-    async findAll(
-        page: number = 1,
-        limit: number = 10,
-        filter?: { keyword?: string }
-    ) {
-        const skip = (page - 1) * limit;
 
-        const query = this.driverRepo.createQueryBuilder('driver')
-        // .leftJoinAndSelect('driver.role', 'role')
-        // .leftJoinAndSelect('driver.earnings', 'earnings') // optional
-        // .leftJoinAndSelect('driver.documents', 'documents') // optional
-        // .leftJoinAndSelect('driver.vehicles', 'vehicles') // optional
-        // .leftJoinAndSelect('driver.performance', 'performance') // optional
-        // .leftJoinAndSelect('driver.trackingRecords', 'tracking') // optional
-        // .leftJoinAndSelect('driver.orders', 'orders') // <-- include orders
-        // .where('role.id = :roleId', { roleId: 3 }); // only drivers
 
-        if (filter?.keyword) {
-            query.andWhere(
-                '(driver.name LIKE :keyword OR driver.email LIKE :keyword OR driver.phone LIKE :keyword)',
-                { keyword: `%${filter.keyword}%` }
-            );
-        }
+    // async findAll(
+    //     page: number = 1,
+    //     limit: number = 10,
+    //     filter?: { keyword?: string }
+    // ) {
+    //     const skip = (page - 1) * limit;
 
-        query.skip(skip).take(limit).orderBy('driver.id', 'ASC');
+    //     const query = this.driverRepo.createQueryBuilder('driver')
+    //     // .leftJoinAndSelect('driver.role', 'role')
+    //     // .leftJoinAndSelect('driver.earnings', 'earnings') // optional
+    //     // .leftJoinAndSelect('driver.documents', 'documents') // optional
+    //     // .leftJoinAndSelect('driver.vehicles', 'vehicles') // optional
+    //     // .leftJoinAndSelect('driver.performance', 'performance') // optional
+    //     // .leftJoinAndSelect('driver.trackingRecords', 'tracking') // optional
+    //     // .leftJoinAndSelect('driver.orders', 'orders') // <-- include orders
+    //     // .where('role.id = :roleId', { roleId: 3 }); // only drivers
 
-        const [drivers, total] = await query.getManyAndCount();
+    //     if (filter?.keyword) {
+    //         query.andWhere(
+    //             '(driver.name LIKE :keyword OR driver.email LIKE :keyword OR driver.phone LIKE :keyword)',
+    //             { keyword: `%${filter.keyword}%` }
+    //         );
+    //     }
 
-        // Remove password before returning
-        const sanitizedDrivers = drivers.map(driver => {
-            const { password, ...rest } = driver;
-            return rest;
+    //     query.skip(skip).take(limit).orderBy('driver.id', 'ASC');
+
+    //     const [drivers, total] = await query.getManyAndCount();
+
+    //     // Remove password before returning
+    //     const sanitizedDrivers = drivers.map(driver => {
+    //         const { password, ...rest } = driver;
+    //         return rest;
+    //     });
+
+    //     return {
+    //         status: 200,
+    //         success: true,
+    //         message: 'Drivers fetched successfully.',
+    //         data: sanitizedDrivers,
+    //         pagination: {
+    //             total,
+    //             page,
+    //             limit,
+    //             totalPages: Math.ceil(total / limit),
+    //         },
+    //     };
+    // }
+
+    // driver.service.ts
+    async getAllDrivers(page: number, limit: number) {
+        const [drivers, total] = await this.driverRepo.findAndCount({
+            relations: ['vehicles', 'verificationDocuments'],
+            order: { id: 'DESC' },
+            skip: (page - 1) * limit,
+            take: limit,
         });
+
+        const formattedData = drivers.map(driver => ({
+            id: driver.id,
+            name: driver.name,
+            phone: driver.phone,
+            email: driver.email,
+            isActive: driver.isActive,
+            profile: driver.profile,
+            vehicles: driver.vehicles?.map(v => ({
+                id: v.id,
+                type: v.type,
+                licensePlate: v.licensePlate,
+                model: v.model,
+                color: v.color,
+                year: v.year
+            })),
+            documents: driver.verificationDocuments?.map(d => ({
+                id: d.id,
+                drivingLicense: d.drivingLicense,
+                idProof: d.idProof,
+                backgroundCheck: d.backgroundCheck
+            }))
+        }));
 
         return {
             status: 200,
             success: true,
-            message: 'Drivers fetched successfully.',
-            data: sanitizedDrivers,
+            message: 'Drivers fetched successfully',
+            data: formattedData,
             pagination: {
                 total,
                 page,
                 limit,
                 totalPages: Math.ceil(total / limit),
-            },
+            }
         };
     }
 
-
     async findOne(id: number) {
         const driver = await this.driverRepo.findOne({
-            where: { id /*, role: { id: 3 } */ }, // role filter abhi comment kiya
-            // relations: [
-            //     'orders',
-            //     'earnings',
-            //     'documents',
-            //     'vehicles',
-            //     'performance',
-            //     'trackingRecords',
-            // ], // optional future joins
+            where: { id },
+            relations: ['vehicles', 'verificationDocuments'], // include vehicles & docs
         });
 
         if (!driver) {
@@ -159,19 +274,64 @@ export class DriverService {
             };
         }
 
-        // Remove password before returning
+        // Remove password
         const { password, ...driverWithoutPassword } = driver;
+
+        // Format like getAllDrivers
+        const formattedDriver = {
+            id: driverWithoutPassword.id,
+            name: driverWithoutPassword.name,
+            phone: driverWithoutPassword.phone,
+            email: driverWithoutPassword.email,
+            isActive: driverWithoutPassword.isActive,
+            profile: driverWithoutPassword.profile,
+            gender: driverWithoutPassword.gender,
+            address: driverWithoutPassword.address,
+            city: driverWithoutPassword.city,
+            state: driverWithoutPassword.state,
+            dob: driverWithoutPassword.dob,
+            pincode: driverWithoutPassword.pincode,
+            vehicles: driverWithoutPassword.vehicles?.map(v => ({
+                id: v.id,
+                type: v.type,
+                licensePlate: v.licensePlate,
+                model: v.model,
+                color: v.color,
+                year: v.year,
+                insuranceNumber: v.insuranceNumber,
+                vehicleRC: v.rcBookNumber
+            })) || [],
+            documents: driverWithoutPassword.verificationDocuments?.map(d => ({
+                id: d.id,
+                drivingLicense: d.drivingLicense,
+                idProof: d.idProof,
+                backgroundCheck: d.backgroundCheck,
+                addressProof: d.addressProof,
+            })) || [],
+        };
 
         return {
             status: 200,
             success: true,
             message: 'Driver fetched successfully',
-            data: driverWithoutPassword,
+            data: formattedDriver,
         };
     }
 
-    async update(id: number, updateDriverDto: UpdateDriverDto) {
-        const driver = await this.driverRepo.findOne({ where: { id, role: { id: 3 } } });
+
+    async update(
+        id: number,
+        dto: UpdateDriverDto,
+        profilePath?: string,
+        vehicleDto?: UpdateVehicleDto,
+        documentDto?: UpdateVerificationDocumentDto
+    ) {
+        // 1️⃣ Driver find karo with relations
+        const driver = await this.driverRepo.findOne({
+            where: { id, role: { id: 3 } },
+            relations: ['vehicles', 'verificationDocuments']
+        });
+
         if (!driver) {
             return {
                 status: 404,
@@ -180,25 +340,133 @@ export class DriverService {
             };
         }
 
-        const updatedDriver = Object.assign(driver, updateDriverDto);
-        const savedDriver = await this.driverRepo.save(updatedDriver);
+        // 2️⃣ Unique fields ka validation
+        if (dto.email) {
+            const existingEmail = await this.driverRepo.findOne({ where: { email: dto.email, id: Not(id) } });
+            if (existingEmail) {
+                return {
+                    status: 409,
+                    success: false,
+                    message: 'Email already exists for another driver',
+                };
+            }
+        }
 
-        const { password, ...driverWithoutPassword } = savedDriver;
+        if (dto.phone) {
+            const existingPhone = await this.driverRepo.findOne({ where: { phone: dto.phone, id: Not(id) } });
+            if (existingPhone) {
+                return {
+                    status: 409,
+                    success: false,
+                    message: 'Phone number already exists for another driver',
+                };
+            }
+        }
+
+        // Agar vehicleDto me licensePlate ya koi aur unique field hai:
+        if (vehicleDto?.licensePlate) {
+            const existingVehicle = await this.vehicleRepo.findOne({
+                where: { licensePlate: vehicleDto.licensePlate, driver: { id: Not(id) } },
+            });
+            if (existingVehicle) {
+                return {
+                    status: 409,
+                    success: false,
+                    message: 'Vehicle with this license plate already exists for another driver',
+                };
+            }
+        }
+
+        // 3️⃣ Driver info update karo
+        Object.assign(driver, dto);
+        if (profilePath) driver.profile = profilePath;
+        if (dto.password) {
+            driver.password = await bcrypt.hash(dto.password, 10);
+        }
+
+        const updatedDriver = await this.driverRepo.save(driver);
+
+        // 4️⃣ Vehicles update/create
+        let vehicle: Vehicle | undefined;
+        if (vehicleDto) {
+            if (driver.vehicles?.length) {
+                vehicle = driver.vehicles[0];
+                Object.assign(vehicle, vehicleDto);
+                vehicle = await this.vehicleRepo.save(vehicle);
+            } else {
+                vehicle = this.vehicleRepo.create({ ...vehicleDto, driver });
+                vehicle = await this.vehicleRepo.save(vehicle);
+            }
+        }
+
+        // 5️⃣ Documents update/create
+        let document: VerificationDocument | undefined;
+        if (documentDto) {
+            if (driver.verificationDocuments?.length) {
+                document = driver.verificationDocuments[0];
+                Object.assign(document, documentDto);
+                document = await this.documentRepo.save(document);
+            } else {
+                document = this.documentRepo.create({ ...documentDto, driver, driverId: driver.id });
+                document = await this.documentRepo.save(document);
+            }
+        }
+
+        const { password, ...driverWithoutPassword } = updatedDriver;
 
         return {
             status: 200,
             success: true,
-            message: 'Driver updated successfully',
-            data: driverWithoutPassword,
+            message: 'Driver, vehicle, and documents updated successfully.',
+            data: { driver: driverWithoutPassword, vehicle, document },
         };
     }
 
-    async remove(id: number): Promise<boolean> {
-        const driver = await this.driverRepo.findOne({ where: { id, role: { id: 3 } } });
-        if (!driver) return false;
 
+
+
+    // async remove(id: number): Promise<boolean> {
+    //     const driver = await this.driverRepo.findOne({ where: { id, role: { id: 3 } } });
+    //     if (!driver) return false;
+
+    //     await this.driverRepo.softRemove(driver);
+    //     return true;
+    // }
+    // driver.service.ts
+    async deleteDriver(id: number) {
+        // 1️⃣ Driver ke record ke saath relations bhi load karo
+        const driver = await this.driverRepo.findOne({
+            where: { id, role: { id: 3 } },
+            relations: ['verificationDocuments', 'vehicles'],
+        });
+
+        if (!driver) {
+            return {
+                status: 404,
+                success: false,
+                message: 'Driver not found',
+                data: [],
+            };
+        }
+
+        // 2️⃣ Soft delete driver
         await this.driverRepo.softRemove(driver);
-        return true;
+
+        // 3️⃣ Agar relations hai toh unka bhi soft delete karo
+        if (driver.verificationDocuments?.length) {
+            await this.documentRepo.softRemove(driver.verificationDocuments);
+        }
+        if (driver.vehicles?.length) {
+            await this.vehicleRepo.softRemove(driver.vehicles);
+        }
+
+        // 4️⃣ Standard response
+        return {
+            status: 200,
+            success: true,
+            message: 'Driver deleted successfully',
+            data: [],
+        };
     }
 
 

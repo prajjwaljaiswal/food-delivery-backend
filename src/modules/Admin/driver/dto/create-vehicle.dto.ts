@@ -1,8 +1,13 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
-
+import { IsNotEmpty, IsOptional, IsString, IsNumber, isString } from 'class-validator';
+import { Type } from 'class-transformer';
 export class CreateVehicleDto {
+  @IsOptional()
+  @IsString()
+  name?: string; // optional
+
   @IsNotEmpty()
   @IsString()
+  @IsOptional()
   type: string;
 
   @IsNotEmpty()
@@ -19,6 +24,10 @@ export class CreateVehicleDto {
 
   @IsOptional()
   @IsString()
+  vehicleType?: string
+
+  @IsOptional()
+  @IsString()
   model?: string;
 
   @IsOptional()
@@ -28,8 +37,4 @@ export class CreateVehicleDto {
   @IsOptional()
   @IsNumber()
   year?: number;
-
-  @IsNotEmpty()
-  @IsNumber()
-  driverId: number; // Relation to Driver
 }

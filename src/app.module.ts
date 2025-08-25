@@ -8,9 +8,11 @@ import { SeedModule } from './modules/seed/seed.module';
 import { AdminModule } from './modules/Admin/admin.module';
 import { ResturenMainModule } from './modules/Restaurant/resturent.module';
 import { EmailModule } from './common/email/email.module';
-import { DriverMainModule } from './modules/Driver/Driver.module';
+// import { DriverMainModule } from './modules/Driver/Driver.module';
 import { AdminDashboardModule } from './modules/Admin/Dashboard/dashboad.module';
 import { MenuItemModule } from './modules/Admin/menus/Resturant-menus.module';
+// import { VehiclesModule } from './modules/Admin/driver/vehicles.module';
+// import { VerificationDocumentModule } from './modules/Admin/driver/verification-document.module';
 
 @Module({
   imports: [
@@ -31,9 +33,11 @@ import { MenuItemModule } from './modules/Admin/menus/Resturant-menus.module';
     AdminModule,
     ResturenMainModule,
     EmailModule,
-    DriverMainModule,
+    // DriverMainModule,
     AdminDashboardModule,
-    MenuItemModule
+    MenuItemModule,
+    // VehiclesModule,
+    // VerificationDocumentModule
   ],
 })
 export class AppModule { }

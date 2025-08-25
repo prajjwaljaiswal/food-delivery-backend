@@ -9,11 +9,11 @@ import { Driver } from 'src/models';
 import { DriverTracking } from 'src/models/driver/Live_location';
 import { DriverEarnings } from 'src/models/driver/driver_Earnings_payout';
 import { DriverPerformance } from 'src/models/driver/driver_Performance';
-import { DriverDocument } from 'src/models/driver/Verification_documents';
 import { Vehicle } from 'src/models/driver/Vehicle.entity';
+import { VerificationDocument } from 'src/models/driver/Verification_documents.entites';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Driver, RoleEntity, Otp, DriverTracking, DriverEarnings, DriverPerformance, DriverDocument, Vehicle])],
+  imports: [TypeOrmModule.forFeature([Driver, RoleEntity, Otp, DriverTracking, DriverEarnings, DriverPerformance, VerificationDocument, Vehicle])],
   controllers: [DriverController],
   providers: [DriverService],
 })

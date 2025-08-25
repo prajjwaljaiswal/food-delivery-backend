@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, DeleteDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Driver } from "./driver_Info.entity";
 
 @Entity('vehicles')
@@ -9,8 +9,9 @@ export class Vehicle {
     @Column()
     type: string; // Bike, Car, Van
 
-    @Column({ unique: true })
+    @Column({ unique: true, nullable: true })
     licensePlate: string;
+
 
     @Column({ nullable: true })
     insuranceNumber: string;
@@ -30,4 +31,8 @@ export class Vehicle {
     // Relation with Driver
     @ManyToOne(() => Driver, (driver) => driver.vehicles, { onDelete: 'CASCADE' })
     driver: Driver;
+
+    
+  @DeleteDateColumn({ nullable: true }) // ✅ Soft delete ke liye ye column add karein
+  deletedAt: Date;
 }
