@@ -304,6 +304,8 @@ export class AuthService {
       const token = this.jwtService.sign({
         sub: user.id,
         role_id: user.role?.id || user.role?.slug,
+        type: 'user',
+        email: user.email,
       });
 
       // ✅ Verify user if needed
@@ -463,6 +465,8 @@ export class AuthService {
   const token = this.jwtService.sign({
     sub: user.id,
     role_id: user.role?.id ?? null,
+    type: 'user',
+    email: user.email,
   });
 
   user.lastLoginAt = new Date();
