@@ -17,7 +17,7 @@ export class VerifyOtpDto {
   otp_code: string;
 
   @IsOptional()
-  @IsIn(['verify', 'forgot_password', 'restaurant_forgot_password', 'driver_forgot_password'])
+  @IsIn(['verify', 'forgot_password', 'restaurant_forgot_password', 'driver_forgot_password','resend-otp'])
   @IsNotEmpty()
   otp_type: string;
 

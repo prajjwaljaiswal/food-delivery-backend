@@ -29,7 +29,7 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto, @Req() req: Request) {
 
-    console.log(dto)
+    console.log(dto, "hkgjghfgdrferwrfsd")
     return this.authService.login(dto, req);
   }
 
