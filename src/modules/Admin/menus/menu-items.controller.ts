@@ -15,6 +15,9 @@ export class MenuItemController {
     @Post()
     @UseInterceptors(FileInterceptor('image'))
     create(@Body() dto: CreateMenuItemDto, @UploadedFile() imageFile?: Express.Multer.File) {
+        console.log('Body:', dto);
+        console.log('Image:', imageFile);
+
         return this.menuItemService.create(dto, imageFile);
     }
 
@@ -33,7 +36,11 @@ export class MenuItemController {
 
     @Patch(':id')
     @UseInterceptors(FileInterceptor('image'))
-    update(@Param('id') id: number, @Body() dto: UpdateMenuItemDto, @UploadedFile() imageFile?: Express.Multer.File) {
+    update(
+        @Param('id', ParseIntPipe) id: number,  
+        @Body() dto: UpdateMenuItemDto,
+        @UploadedFile() imageFile?: Express.Multer.File
+    ) {
         return this.menuItemService.update(id, dto, imageFile);
     }
 

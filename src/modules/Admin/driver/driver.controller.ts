@@ -82,8 +82,6 @@ export class DriverController {
         : undefined;
 
 
-    console.log('vehicleDto:', vehicleDto); // check
-
 
     return this.driverService.create(dto, profilePath, vehicleDto, documentDto);
   }

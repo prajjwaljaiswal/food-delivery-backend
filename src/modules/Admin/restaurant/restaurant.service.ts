@@ -30,8 +30,7 @@ export class RestaurantService {
 
     // 2️⃣ Password hash
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    console.log(dto.galleryImages, dto.bannerImages, dto.foodSafetyCertificate, dto.taxIdCertificate, dto.businessLicense, dto.insuranceCertificate)
-    // 3️⃣ Create restaurant entity
+        // 3️⃣ Create restaurant entity
     const restaurant = this.restaurantRepo.create({
       ...dto,
       password: hashedPassword,

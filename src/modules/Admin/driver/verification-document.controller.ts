@@ -32,10 +32,6 @@ export class VerificationDocumentController {
     @UploadedFiles() files: { [key: string]: Express.Multer.File[] },
     @Body() dto: CreateVerificationDocumentDto,
 ) {
-    console.log('driverId:', driverId);
-    console.log('dto:', dto);
-    console.log('files:', files);
-
     const filePaths: CreateVerificationDocumentDto = {
         drivingLicense: files.drivingLicense?.[0]?.path,
         idProof: files.idProof?.[0]?.path,

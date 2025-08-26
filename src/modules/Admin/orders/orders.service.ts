@@ -27,7 +27,7 @@ export class OrderService {
     async findOne(id: number): Promise<Order> {
         const order = await this.orderRepo.findOne({
             where: { id },
-            relations: ['restaurant', 'user', 'driver'],
+            relations: ['restaurant', 'user'],
         });
 
         if (!order) throw new NotFoundException('Order not found');
@@ -74,7 +74,7 @@ export class OrderService {
     async findAllByRestaurant(restaurantId: number): Promise<Order[]> {
         const orders = await this.orderRepo.find({
             where: { restaurant: { id: restaurantId } },
-            relations: ['restaurant', 'user', 'driver'],
+            relations: ['restaurant', 'user'],
             order: { createdAt: 'DESC' },
         });
 
@@ -150,6 +150,39 @@ export class OrderService {
             }, {}),
         };
     }
+    async getOrdersSummary(page: number = 1, limit: number = 10) {
+        const [orders, total] = await this.orderRepo
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.user', 'user')
+            .leftJoinAndSelect('order.restaurant', 'restaurant')
+            .leftJoinAndSelect('order.MenuItem', 'menuItem')
+            .orderBy('order.createdAt', 'DESC')
+            .skip((page - 1) * limit)   // skip previous pages
+            .take(limit)                // limit per page
+            .getManyAndCount();         // returns [data, totalCount]
 
+        const data = orders.map(o => ({
+            id: o.id,
+            userName: `${o.user.firstName || ''} ${o.user.lastName || ''}`.trim(),
+            userPhone: o.user.phone || 'N/A',
+            restaurantName: o.restaurant.name || 'N/A',
+            totalAmount: o.totalAmount,
+            status: o.status,
+            paymentMethod: o.paymentMethod || 'N/A',
+            orderTime: o.createdAt,
+        }));
+
+        return {
+            success: true,
+            message: 'Orders fetched successfully',
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
 
 }

@@ -55,8 +55,8 @@ export class Driver {
     role: RoleEntity;
 
 
-    @OneToMany(() => Order, order => order.driver)
-    orders: Order[];
+    // @OneToMany(() => Order, order => order.driver)
+    // orders: Order[];
 
     @DeleteDateColumn({ nullable: true })
     deletedAt?: Date;

@@ -23,10 +23,10 @@ export class Order {
   id: number;
 
   /* ---------------- User & Restaurant Info ---------------- */
-  @ManyToOne(() => UserEntity, (user) => user.orders, { eager: true })
+  @ManyToOne(() => UserEntity, (user) => user.orders)
   user: UserEntity;
 
-  @ManyToOne(() => Restaurant, (restaurant) => restaurant.orders, { eager: true })
+  @ManyToOne(() => Restaurant, (restaurant) => restaurant.orders)
   restaurant: Restaurant;
 
   /* ---------------- Products in Order ---------------- */
@@ -34,9 +34,9 @@ export class Order {
   @JoinTable()
   MenuItem: MenuItem[];
 
-  /* ---------------- Driver / Delivery Info ---------------- */
-  @ManyToOne(() => Driver, { nullable: true, eager: true })
-  driver: Driver | null;
+  // /* ---------------- Driver / Delivery Info ---------------- */
+  // @ManyToOne(() => Driver, { nullable: true, eager: true })
+  // driver: Driver | null;
 
   /* ---------------- Payment & Pricing ---------------- */
   @Column('decimal', { precision: 10, scale: 2 })

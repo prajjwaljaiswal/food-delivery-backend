@@ -1,6 +1,5 @@
-import { Transform, Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
-import { AddOnEnum, DietaryTagEnum, VariantEnum } from 'src/models/resturant-menu.entity';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateMenuItemDto {
     @IsString()
@@ -10,8 +9,8 @@ export class CreateMenuItemDto {
     @IsString()
     description?: string;
 
+    @Transform(({ value }) => parseFloat(value))
     @IsNumber()
-    @Type(() => Number)
     price: number;
 
     @IsOptional()
@@ -19,28 +18,27 @@ export class CreateMenuItemDto {
     image?: string;
 
     @IsOptional()
+    @Transform(({ value }) => value === 'true')
     @IsBoolean()
-    @Type(() => Boolean)
     inStock?: boolean;
 
+    @Transform(({ value }) => parseInt(value, 10))
     @IsNumber()
-    @Type(() => Number)
     restaurantId: number;
 
+    @Transform(({ value }) => parseInt(value, 10))
     @IsNumber()
-    @Type(() => Number)
     categoryId: number;
 
     @IsOptional()
     @IsString()
-    variants?: string; // "Small,Medium"
+    variants?: string;
 
     @IsOptional()
     @IsString()
-    addOns?: string; // "Sauce,Topping"
+    addOns?: string;
 
     @IsOptional()
     @IsString()
-    dietaryTags?: string; // "Vegan,Gluten-Free"
-
+    dietaryTags?: string;
 }

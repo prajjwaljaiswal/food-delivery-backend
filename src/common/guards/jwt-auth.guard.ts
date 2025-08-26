@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { RoleEnum } from '../enums/roles.enum';
 
-// Guard for JWT authentication
+// JWT Auth Guard: Checks if JWT token is valid
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   handleRequest(err, user, info, context) {
@@ -22,17 +22,17 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     console.log('✅ JWT user authenticated');
-    return user; // This gets attached to req.user
+    return user; // attaches user to req.user
   }
 }
 
-// Custom decorator to set roles metadata
+// Decorator to set roles for an endpoint
 export const Roles = (...roles: RoleEnum[]) => SetMetadata('roles', roles);
 
-// Role-based authorization guard
+// Role Guard: Checks if the user has the required role
 @Injectable()
 export class RoleGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private reflector: Reflector) { }
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<RoleEnum[]>('roles', [
@@ -40,28 +40,28 @@ export class RoleGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles || requiredRoles.length === 0) {
-      console.log('⚠️ No specific roles required. Allowing access.');
-      return true;
-    }
-
     const request = context.switchToHttp().getRequest();
     const user = request.user as { id: number | string; role_id: RoleEnum };
 
-    console.log('→ Logged-in user:', user);
+    // ✅ If no roles are specified, deny by default
+    if (!requiredRoles || requiredRoles.length === 0) {
+      console.log('⛔ No roles specified, denying access');
+      throw new ForbiddenException('Access denied: No roles allowed');
+    }
 
-    if (!user || !user.role_id) {
-      console.log('⛔ User or role_id missing');
+    if (!user || user.role_id === undefined) {
+      console.log('⛔ User not found or role missing');
       throw new ForbiddenException('Access denied');
     }
+
+    // ✅ Strict role matching
     const hasRole = requiredRoles.includes(Number(user.role_id));
 
-
-    console.log(`✅ Role check result: ${hasRole}`);
+    console.log(`→ Required Roles: ${requiredRoles}, User Role: ${user.role_id}, Allowed: ${hasRole}`);
 
     if (!hasRole) {
       console.log('⛔ User role not authorized');
-      throw new ForbiddenException('Forbidden resource');
+      throw new ForbiddenException('Forbidden resource: Role not allowed');
     }
 
     return true;

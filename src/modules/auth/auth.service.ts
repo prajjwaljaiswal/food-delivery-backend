@@ -360,7 +360,7 @@ export class AuthService {
     const { username, password, device_token } = dto;
 
     let user: UserEntity | null = null;
-console.log( username, password, device_token ,"")
+    
     // ✅ Check email or phone format
     if (/^\S+@\S+\.\S+$/.test(username)) {
       user = await this.userRepo.findOne({
@@ -684,7 +684,7 @@ console.log( username, password, device_token ,"")
 
   /* -------------------------- Logout Logic ------------------------ */
   async logout(req: Request) {
-    console.log('Logging out user...');
+    
 
     const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -733,8 +733,7 @@ console.log( username, password, device_token ,"")
 
       const jwtUser = req.user as any;
 
-      console.log('JWT User Payload:', jwtUser);
-
+      
       const existingUser = await this.userRepo.findOne({
 
         where: { id: jwtUser.id },
@@ -759,11 +758,9 @@ console.log( username, password, device_token ,"")
 
       }
 
-      console.log('Raw password from DTO:', dto.password);
-
+      
       const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-      console.log('Hash to be saved:', hashedPassword);
+      
 
       await this.userRepo.update(jwtUser.id, {
 
@@ -772,8 +769,7 @@ console.log( username, password, device_token ,"")
         isOtpVerified: true,
 
       });
-
-      console.log(`Password updated for user ID: ${jwtUser.id}`);
+      
 
       return {
 
@@ -797,8 +793,7 @@ console.log( username, password, device_token ,"")
 
     } catch (error) {
 
-      console.error('Reset Password Error:', error);
-
+      
       return {
 
         status: 500,

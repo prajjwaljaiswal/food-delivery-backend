@@ -1,16 +1,19 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Restaurant } from 'src/models';
-import { RestaurantController } from './profile.controller';
-import { RestaurantService } from './profile.service'; import { JwtModule } from '@nestjs/jwt';
+
+import { JwtModule } from '@nestjs/jwt';
 import { DeviceToken, UserEntity, Otp, RoleEntity } from 'src/models';
 import { EmailService } from 'src/common/email/email.service';
 import { EmailModule } from 'src/common/email/email.module';
 import { JwtUtil } from 'src/common/utils/jwt.util';
+import { RestaurantService } from './UserRestaurant.service';
+import { RestaurantController } from './UserRestaurant.controller';
+import { MenuItem } from 'src/models/resturant-menu.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Restaurant, DeviceToken, UserEntity, Otp, RoleEntity]),
+    TypeOrmModule.forFeature([Restaurant, DeviceToken, UserEntity, Otp, RoleEntity,MenuItem]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'wuMTXyB2YAMUSOZZ5WVygkezaufs3LPSsvhPXLKZCpVX6P0ro9VwtINsq7yb3P24',
       signOptions: { expiresIn: '7d' },

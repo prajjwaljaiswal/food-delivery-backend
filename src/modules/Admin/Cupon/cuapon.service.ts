@@ -13,7 +13,6 @@ export class CouponService {
   ) {}
 
   async create(dto: CreateCouponDto) {
-    console.log('Creating new coupon:', dto);
     const exists = await this.couponRepo.findOne({ where: { code: dto.code } });
     if (exists) {
       throw new Error('Coupon code already exists.');

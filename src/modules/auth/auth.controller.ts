@@ -16,20 +16,18 @@ export class AuthController {
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
-    // console.log('Registering user with data:', dto);
+
     return this.authService.register(dto);
   }
 
   @Post('verify-otp')
   verifyOtp(@Body() dto: VerifyOtpDto, @Req() req: Request) {
-    // console.log('Verifying OTP for user:', dto);
+
     return this.authService.verifyOtp(dto, req);
   }
 
   @Post('login')
   login(@Body() dto: LoginDto, @Req() req: Request) {
-
-    console.log(dto)
     return this.authService.login(dto, req);
   }
 
@@ -43,14 +41,12 @@ export class AuthController {
   // @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(@Req() req: Request) {
-    console.log("AuthController initialized successfully");
     return this.authService.logout(req);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto, @Req() req: Request) {
-    console.log("Resetting password for user:", req.user);
     return this.authService.resetPassword(dto, req);
   }
 

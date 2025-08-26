@@ -2,17 +2,17 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { UsersModule } from './modules/users/users.module';
+
 import { AuthModule } from './modules/auth/auth.module';
 import { SeedModule } from './modules/seed/seed.module';
 import { AdminModule } from './modules/Admin/admin.module';
-import { ResturenMainModule } from './modules/Restaurant/resturent.module';
 import { EmailModule } from './common/email/email.module';
 // import { DriverMainModule } from './modules/Driver/Driver.module';
 import { AdminDashboardModule } from './modules/Admin/Dashboard/dashboad.module';
 import { MenuItemModule } from './modules/Admin/menus/Resturant-menus.module';
-// import { VehiclesModule } from './modules/Admin/driver/vehicles.module';
-// import { VerificationDocumentModule } from './modules/Admin/driver/verification-document.module';
+import { RestaurantProfileModule } from './modules/Restaurant/UserRestaurant.module';
+import { UserModule } from './modules/customer/users.module';
+
 
 @Module({
   imports: [
@@ -27,11 +27,11 @@ import { MenuItemModule } from './modules/Admin/menus/Resturant-menus.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    UsersModule,
+    UserModule,
     AuthModule,
     SeedModule,
     AdminModule,
-    ResturenMainModule,
+    RestaurantProfileModule,
     EmailModule,
     // DriverMainModule,
     AdminDashboardModule,

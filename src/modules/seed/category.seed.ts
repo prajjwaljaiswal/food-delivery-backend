@@ -20,7 +20,7 @@ export const seedCategories = async (dataSource: DataSource) => {
     for (const id of restaurantIds) {
       const restaurant = await restaurantRepo.findOne({ where: { id } });
       if (!restaurant) {
-        console.log(`Restaurant with ID ${id} not found, skipping...`);
+        
         continue;
       }
 
