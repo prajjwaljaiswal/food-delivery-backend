@@ -61,7 +61,7 @@ export class RestaurantController {
             callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
           },
         }),
-       fileFilter: (req, file, callback) => {
+        fileFilter: (req, file, callback) => {
           const allowedMimeTypes = [
             'image/jpeg',
             'image/jpg',
@@ -121,10 +121,21 @@ export class RestaurantController {
       ? `/uploads/restaurants/${files.insuranceCertificate[0].filename}`
       : undefined;
 
-    // ✅ Description fix (array → string)
-    if (Array.isArray(dto.description)) {
-      dto.description = dto.description.join(' ');
+
+
+
+    // ✅ Description fix (array → string & sanitize)
+    if (dto.description) {
+      if (Array.isArray(dto.description)) {
+        dto.description = dto.description
+          .filter(v => v && v.toString().trim() !== '') // empty strings remove
+          .join(' ')
+          .trim();
+      } else {
+        dto.description = String(dto.description).trim();
+      }
     }
+
 
     // ✅ weeklySchedule must be object (simple-json column)
     if (dto.weeklySchedule && typeof dto.weeklySchedule === 'string') {
@@ -213,6 +224,18 @@ export class RestaurantController {
       insuranceCertificate?: Express.Multer.File[];
     },
   ) {
+    // 0️⃣ Fix description
+    if (dto.description) {
+      if (Array.isArray(dto.description)) {
+        dto.description = dto.description
+          .filter(v => v && v.toString().trim() !== '')
+          .join(' ')
+          .trim();
+      } else {
+        dto.description = String(dto.description).trim();
+      }
+    }
+
     // 1️⃣ Parse weeklySchedule if it's a string
     if (dto.weeklySchedule && typeof dto.weeklySchedule === 'string') {
       try {
@@ -221,6 +244,7 @@ export class RestaurantController {
         throw new BadRequestException('Invalid weeklySchedule JSON format');
       }
     }
+
 
     // 2️⃣ Convert boolean fields from string to actual booleans
     if (
@@ -287,5 +311,5 @@ export class RestaurantController {
     return this.restaurantService.remove(id);
   }
 
-  
+
 }
