@@ -5,12 +5,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
-import { Restaurant } from 'src/models';
+import { Category, Driver, Order, Restaurant, UserEntity } from 'src/models';
 import * as bcrypt from 'bcrypt';
+import { MenuItem } from 'src/models/resturant-menu.entity';
 
 @Injectable()
 export class RestaurantService {
   constructor(
+
+    @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
+    @InjectRepository(MenuItem) private readonly menuItemRepo: Repository<MenuItem>,
+    @InjectRepository(Category) private readonly categoryRepo: Repository<Category>,
     @InjectRepository(Restaurant)
     private restaurantRepo: Repository<Restaurant>,
   ) { }
@@ -295,7 +300,6 @@ export class RestaurantService {
     };
   }
 
-
   async remove(id: number) {
     const restaurant = await this.restaurantRepo.findOne({ where: { id } });
 
@@ -308,6 +312,12 @@ export class RestaurantService {
       };
     }
 
+    // 1️⃣ Delete dependent rows first
+    await this.categoryRepo.delete({ restaurantId: id });
+    await this.menuItemRepo.delete({ restaurant: { id } });
+    await this.orderRepo.delete({ restaurant: { id } });
+
+    // 2️⃣ Now remove the restaurant
     await this.restaurantRepo.remove(restaurant);
 
     return {
@@ -317,4 +327,5 @@ export class RestaurantService {
       data: null,
     };
   }
+
 }

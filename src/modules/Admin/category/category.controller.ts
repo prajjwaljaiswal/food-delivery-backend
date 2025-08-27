@@ -42,7 +42,7 @@ export class CategoryController {
         },
       }),
       fileFilter: (req, file, callback) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|avif)$/)) {
           return callback(new Error('Only image files are allowed!'), false);
         }
         callback(null, true);
@@ -86,7 +86,7 @@ export class CategoryController {
         },
       }),
       fileFilter: (req, file, callback) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|avif)$/)) {
           return callback(new Error('Only image files are allowed!'), false);
         }
         callback(null, true);
