@@ -11,6 +11,7 @@ import { EmailModule } from './common/email/email.module';
 // import { DriverMainModule } from './modules/Driver/Driver.module';
 import { AdminDashboardModule } from './modules/Admin/Dashboard/dashboad.module';
 import { MenuItemModule } from './modules/Admin/menus/Resturant-menus.module';
+import { Driver } from './models';
 // import { VehiclesModule } from './modules/Admin/driver/vehicles.module';
 // import { VerificationDocumentModule } from './modules/Admin/driver/verification-document.module';
 
@@ -33,7 +34,7 @@ import { MenuItemModule } from './modules/Admin/menus/Resturant-menus.module';
     AdminModule,
     ResturenMainModule,
     EmailModule,
-    // DriverMainModule,
+    Driver,
     AdminDashboardModule,
     MenuItemModule,
     // VehiclesModule,

@@ -76,10 +76,20 @@ export class CreateRestaurantDto {
   @IsOptional()
   @IsString()
   deliveryTime?: string;
+
+
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => (value === null || value === undefined ? undefined : String(value)))
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value.filter(v => v && v.toString().trim() !== '').join(' ');
+    }
+    if (value === null || value === undefined) return undefined;
+    return String(value);
+  })
   description?: string;
+
+
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)

@@ -61,11 +61,17 @@ export class RestaurantController {
             callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
           },
         }),
-        fileFilter: (req, file, callback) => {
-          if (!file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/i)) {
-            return callback(new BadRequestException('Only image or PDF files are allowed!'), false);
+       fileFilter: (req, file, callback) => {
+          const allowedMimeTypes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/avif',
+            'application/pdf',
+          ];
+          if (!allowedMimeTypes.includes(file.mimetype)) {
+            return callback(new Error('Only image or PDF files are allowed!'), false);
           }
-
           callback(null, true);
         },
       },
@@ -177,15 +183,19 @@ export class RestaurantController {
           },
         }),
         fileFilter: (req, file, callback) => {
-          // certificates may also be PDF
-          if (!file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/)) {
-            return callback(
-              new Error('Only image or PDF files are allowed!'),
-              false,
-            );
+          const allowedMimeTypes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/avif',
+            'application/pdf',
+          ];
+          if (!allowedMimeTypes.includes(file.mimetype)) {
+            return callback(new Error('Only image or PDF files are allowed!'), false);
           }
           callback(null, true);
-        },
+        }
+        ,
       },
     ),
   )
@@ -276,4 +286,6 @@ export class RestaurantController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.restaurantService.remove(id);
   }
+
+  
 }

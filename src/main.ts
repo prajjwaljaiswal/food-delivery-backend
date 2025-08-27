@@ -8,10 +8,20 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as express from 'express';
 
 async function bootstrap() {
-  // ✅ Disable default body parser so Multer can handle multipart/form-data
   const app = await NestFactory.create(AppModule, { bodyParser: false });
+
+  // ✅ CORS sabse pehle enable karo
+  app.enableCors({
+    origin: '*', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false, // '*' ke saath true nahi chalega
+  });
+
+  // ✅ Middleware setup
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
   // ✅ Global ValidationPipe
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
@@ -41,32 +51,8 @@ async function bootstrap() {
   // ✅ Static folder for uploads
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
-  // ✅ Enable CORS
-  // app.enableCors({
-  //   origin: '*',
-  //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  //   credentials: true,
-  // });
-
-  app.enableCors({
-    origin: 'http://localhost:3000', // your frontend URL
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    credentials: true,               // allows cookies/auth headers
-  });
-
-
-  // ✅ Additional ValidationPipe (optional)
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
   // ✅ Seeder
   const seeder = app.get(SeedService);
-
   console.log('🔹 Seeding roles...');
   await seeder.seedRoles();
 
