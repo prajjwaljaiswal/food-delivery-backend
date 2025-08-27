@@ -5,8 +5,8 @@ export class ResendOtpDto {
   @IsEmail()
   email: string;
 
-  @IsEnum(['verify', 'forgot_password', 'restaurant_forgot_password'], {
-    message: 'otp_type must be either "verify" or "forgot_password"',
+  @IsEnum(['verify', 'forgot_password', 'restaurant_forgot_password','resend-otp'], {
+    message: 'otp_type must be either "verify" or "forgot_password" and "resend-otp"',
   })
   @IsOptional()
   otp_type: 'verify' | 'forgot_password';

@@ -102,14 +102,21 @@ export class AuthService {
       }
 
       // 🔍 Check if user already exists
-      const existingUser = await userRepo.findOne({ where: { email: dto.email } });
+      const existingUser = await userRepo.findOne({
+        where: [
+          { email: dto.email },
+          { phone: dto.phone } // ✅ Check phone too
+        ]
+      });
 
       if (existingUser) {
+        // ✅ If user is already verified, stop here
         if (existingUser.isOtpVerified) {
+          const conflictField = existingUser.email === dto.email ? 'Email' : 'Phone number';
           return {
             status: false,
             code: 400,
-            message: 'User already registered and verified.',
+            message: `${conflictField} already registered and verified.`,
             data: null
           };
         }
@@ -154,7 +161,7 @@ export class AuthService {
 
         await queryRunner.commitTransaction();
 
-        // 📧 Send email (after commit)
+        // 📧 Send email after commit
         try {
           await this.emailService.sendTemplateNotification({
             user: existingUser,
@@ -172,6 +179,7 @@ export class AuthService {
           data: { email: existingUser.email }
         };
       }
+
 
       // 🆕 Create new user
       const hashedPassword = await bcrypt.hash(dto.password, parseInt(process.env.BCRYPT_SALT_ROUNDS || '10'));
@@ -253,6 +261,7 @@ export class AuthService {
         };
       }
 
+      console.log(dto.otp_code, dto.email, dto.otp_type)
       const otp = await otpRepo.findOne({
         where: {
           otpCode: dto.otp_code,
@@ -261,7 +270,7 @@ export class AuthService {
         },
         order: { id: 'DESC' },
       });
-
+      console.log(otp, "otp")
       if (!otp) {
         return {
           status: false,
@@ -358,7 +367,7 @@ export class AuthService {
   /* -------------------------- Login Logic ------------------------ */
   async login(dto: LoginDto, req: Request) {
     const { username, password, device_token } = dto;
-
+console.log(username, password, device_token,"username, password, device_token")
     let user: UserEntity | null = null;
     
     // ✅ Check email or phone format
@@ -602,84 +611,90 @@ export class AuthService {
   }
 
 
+async resendOtp(dto: ResendOtpDto) {
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
 
-  async resendOtp(dto: ResendOtpDto) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+  try {
+    const userRepo = queryRunner.manager.getRepository(UserEntity);
+    const otpRepo = queryRunner.manager.getRepository(Otp);
 
-    try {
-      const userRepo = queryRunner.manager.getRepository(UserEntity);
-      const otpRepo = queryRunner.manager.getRepository(Otp);
+    const user = await userRepo.findOneOrFail({ where: { email: dto.email } });
 
-      const user = await userRepo.findOneOrFail({ where: { email: dto.email } });
-
-      // Invalidate all old OTPs of this type
-      await otpRepo.update(
-        { email: dto.email, otpType: dto.otp_type, isUsed: false },
-        { isUsed: true }
-      );
-
-      // Prevent OTP flooding
-      const recentOtp = await otpRepo.findOne({
-        where: { email: dto.email, otpType: dto.otp_type, isUsed: false, expiresAt: MoreThan(new Date()) },
-        order: { id: 'DESC' },
-      });
-
-      if (recentOtp) {
-        const secondsLeft = Math.floor((recentOtp.expiresAt.getTime() - Date.now()) / 1000);
-        return {
-          success: false,
-          message: `Please wait ${secondsLeft < 60 ? secondsLeft + ' seconds' : Math.ceil(secondsLeft / 60) + ' minutes'} before requesting another OTP.`,
-        };
-      }
-
-      // Generate new OTP
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-      await otpRepo.save({
-        email: user.email,
-        otpCode,
+    // ✅ 1 min ke andar agar koi OTP request hui hai toh error return karo
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const recentOtp = await otpRepo.findOne({
+      where: {
+        email: dto.email,
         otpType: dto.otp_type,
-        expiresAt,
-        isUsed: false,
-        otpableType: 'User',
-      });
+        createdAt: MoreThan(oneMinuteAgo), // sirf 1 min ka check
+      },
+      order: { id: 'DESC' },
+    });
 
-      await queryRunner.commitTransaction(); // ✅ First commit OTP to DB
-
-      let emailSent = true;
-      try {
-        await this.emailService.sendTemplateNotification({
-          user,
-          template: dto.otp_type === 'verify' ? 'welcome-email' : 'forgot-password',
-          data: { otp: otpCode },
-        });
-      } catch (emailErr) {
-        emailSent = false;
-        console.error('[Resend OTP] Failed to send email:', emailErr?.message);
-      }
-
-      return {
-        success: true,
-        message: emailSent
-          ? 'OTP sent successfully to your email.'
-          : 'OTP generated successfully but failed to send email. Please contact support.',
-        data: { email: user.email, otpType: dto.otp_type, emailSent },
-      };
-
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
+    if (recentOtp) {
+      const secondsLeft = 60 - Math.floor((Date.now() - recentOtp.createdAt.getTime()) / 1000);
       return {
         success: false,
-        message: 'Something went wrong while resending OTP.',
-        error: err?.message,
+        message: `Please wait ${secondsLeft} seconds before requesting another OTP.`,
       };
-    } finally {
-      await queryRunner.release();
     }
+
+    // ✅ Purane OTP invalidate karo
+    await otpRepo.update(
+      { email: dto.email, otpType: dto.otp_type, isUsed: false },
+      { isUsed: true }
+    );
+
+    // ✅ Naya OTP generate karo
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await otpRepo.save({
+      email: user.email,
+      otpCode,
+      otpType: dto.otp_type, // ✅ same type rakho
+      expiresAt,
+      isUsed: false,
+      otpableType: 'User',
+      createdAt: new Date(),
+    });
+
+    await queryRunner.commitTransaction();
+
+    let emailSent = true;
+    try {
+      await this.emailService.sendTemplateNotification({
+        user,
+        template: dto.otp_type === 'verify' ? 'welcome-email' : 'forgot-password',
+        data: { otp: otpCode },
+      });
+    } catch (emailErr) {
+      emailSent = false;
+      console.error('[Resend OTP] Failed to send email:', emailErr?.message);
+    }
+
+    return {
+      success: true,
+      message: emailSent
+        ? 'OTP sent successfully to your email.'
+        : 'OTP generated but email sending failed. Contact support.',
+      data: { email: user.email, otpType: dto.otp_type, emailSent },
+    };
+
+  } catch (err) {
+    await queryRunner.rollbackTransaction();
+    return {
+      success: false,
+      message: 'Something went wrong while resending OTP.',
+      error: err?.message,
+    };
+  } finally {
+    await queryRunner.release();
   }
+}
+
 
 
   /* -------------------------- Logout Logic ------------------------ */
