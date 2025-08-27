@@ -12,6 +12,7 @@ import { AdminDashboardModule } from './modules/Admin/Dashboard/dashboad.module'
 import { MenuItemModule } from './modules/Admin/menus/Resturant-menus.module';
 import { RestaurantProfileModule } from './modules/Restaurant/UserRestaurant.module';
 import { UserModule } from './modules/customer/users.module';
+import { DriverModule } from './modules/Admin/driver/driver.module';
 
 
 @Module({
@@ -33,7 +34,7 @@ import { UserModule } from './modules/customer/users.module';
     AdminModule,
     RestaurantProfileModule,
     EmailModule,
-    // DriverMainModule,
+    DriverModule,
     AdminDashboardModule,
     MenuItemModule,
     // VehiclesModule,
