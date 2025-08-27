@@ -231,11 +231,6 @@ export class RestaurantService {
     // 4️⃣ Update allowed fields
     Object.assign(restaurant, dto);
 
-    // 5️⃣ Hash password if provided
-    if (dto.password) {
-      restaurant.password = await bcrypt.hash(dto.password, 10);
-    }
-
     // 6️⃣ Merge or replace weeklySchedule
     if (dto.weeklySchedule) {
       restaurant.weeklySchedule = {
@@ -250,14 +245,6 @@ export class RestaurantService {
 
     // 8️⃣ Replace images if new ones uploaded
     if (dto.logo) restaurant.logo = dto.logo;
-    if (dto.galleryImages) restaurant.galleryImages = dto.galleryImages;
-    if (dto.bannerImages) restaurant.bannerImages = dto.bannerImages;
-
-    // 9️⃣ Replace certificates if new ones uploaded
-    if (dto.foodSafetyCertificate) restaurant.foodSafetyCertificate = dto.foodSafetyCertificate;
-    if (dto.taxIdCertificate) restaurant.taxIdCertificate = dto.taxIdCertificate;
-    if (dto.businessLicense) restaurant.businessLicense = dto.businessLicense;
-    if (dto.insuranceCertificate) restaurant.insuranceCertificate = dto.insuranceCertificate;
 
     // 🔟 Save updated restaurant
     await this.restaurantRepo.save(restaurant);
