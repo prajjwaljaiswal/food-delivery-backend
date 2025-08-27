@@ -153,8 +153,7 @@ export class RestaurantController {
   }
 
   /* -------------------------- Update Restaurant ------------------------ */
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles(RoleEnum.ADMIN)
+
   @Patch(':id')
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -190,7 +189,6 @@ export class RestaurantController {
       },
     ),
   )
-
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: any,
@@ -259,8 +257,6 @@ export class RestaurantController {
     /* ------------------------------------------- */
 
     // 4️⃣ Call service update method
-
-    console.log(dto, "dto");
     return this.restaurantService.update(id, {
       ...dto,
       logo: files.logo?.[0] ? `/uploads/restaurants/${files.logo[0].filename}` : undefined,
