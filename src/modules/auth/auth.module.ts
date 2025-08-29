@@ -14,10 +14,11 @@ import { UserEntity, Otp, RoleEntity, DeviceToken } from 'src/models';
 import { EmailModule } from 'src/common/email/email.module';
 import { JwtStrategy } from 'src/providers/strategies/jwt.strategy';
 import { JwtAuthGuard, RoleGuard } from 'src/common/guards/jwt-auth.guard';
+import { AddressEntity } from 'src/models/address.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity, Otp, RoleEntity, DeviceToken]),
+    TypeOrmModule.forFeature([UserEntity, Otp, RoleEntity, DeviceToken ,AddressEntity]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

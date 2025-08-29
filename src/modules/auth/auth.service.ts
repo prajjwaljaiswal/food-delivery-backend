@@ -1038,7 +1038,7 @@ export class AuthService {
     // Fetch user with role
     const user = await this.userRepo.findOne({
       where: { id: payload.sub },
-      relations: ['role'],
+      relations: ['addresses'],
     });
 
     if (!user) {

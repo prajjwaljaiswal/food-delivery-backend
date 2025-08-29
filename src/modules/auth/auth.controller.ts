@@ -61,6 +61,7 @@ export class AuthController {
   async refreshToken(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshToken(dto.token);
   }
+  
   @Get('me')
   async getMe(@Headers('Authorization') authHeader: string) {
     if (!authHeader) return { success: false, status: 401, message: 'No token provided.' };

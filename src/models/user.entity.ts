@@ -13,6 +13,7 @@ import {
 import { RoleEntity } from './role.entity';
 import { DeviceToken } from './device-token.entity';
 import { Order } from './order.entity';
+import { AddressEntity } from './address.entity';
 
 @Entity({ name: 'users' })
 export class UserEntity {
@@ -47,7 +48,18 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   country?: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  state?: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  city?: string;
+
+  @OneToMany(() => AddressEntity, (address) => address.user, { cascade: true })
+  addresses: AddressEntity[];
+
+
+  @Column({ type: 'varchar', name: 'pincode', nullable: true })
+  pincode?: string;
 
   @Column({ name: 'zip_code', type: 'varchar', nullable: true })
   zipCode?: string;
