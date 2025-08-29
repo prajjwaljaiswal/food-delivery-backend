@@ -15,6 +15,8 @@ export class UsersService {
         @InjectRepository(Restaurant) private readonly restaurantRepo: Repository<Restaurant>,
         @InjectRepository(MenuItem) private readonly menuItemRepo: Repository<MenuItem>,
     ) { }
+
+
     async createOrder(dto: CreateOrderDto) {
         const { userId, restaurantId, menuItemIds, paymentMethod, couponCode, isPaid, totalAmount, discountAmount } = dto;
 
@@ -36,10 +38,13 @@ export class UsersService {
             return { success: false, message: `Menu items not found for IDs: [${menuItemIds.join(', ')}]`, data: null };
         }
 
-        // 4️⃣ Total Amount calculate karo sirf jab front-end se nahi aata
-        let finalTotal = totalAmount ?? menuItems.reduce((sum, item) => sum + Number(item.price), 0);
+        // 4️⃣ Total Amount: Directly use frontend value, no recalculation
+        if (totalAmount == null) {
+            return { success: false, message: 'Total amount is required from frontend', data: null };
+        }
+        const finalTotal = totalAmount;
 
-        // 5️⃣ Discount calculate karo sirf jab front-end se nahi aata
+        // 5️⃣ Discount: calculate only if frontend didn’t send
         let finalDiscount = discountAmount ?? 0;
         if (discountAmount == null && couponCode) {
             const code = couponCode.trim().toUpperCase();

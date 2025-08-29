@@ -21,6 +21,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResendOtpDto } from './dto/Resendotp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RefreshTokenDto } from './dto/RefreshTokenDto.dto';
 
 
 @Injectable()
@@ -41,12 +42,16 @@ export class AuthService {
 
     private readonly jwtService: JwtService,
   ) { }
+
+
   private generateOtpCode(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
+
   private getOtpExpiry(): Date {
     return new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
   }
+
   private async saveDeviceTokenWithRunner(
     user: UserEntity,
     deviceToken: string,
@@ -261,7 +266,6 @@ export class AuthService {
         };
       }
 
-      console.log(dto.otp_code, dto.email, dto.otp_type)
       const otp = await otpRepo.findOne({
         where: {
           otpCode: dto.otp_code,
@@ -364,12 +368,159 @@ export class AuthService {
   }
 
 
+  // /* -------------------------- Login Logic ------------------------ */
+  // async login(dto: LoginDto, req: Request) {
+  //   const { username, password, device_token } = dto;
+  //   let user: UserEntity | null = null;
+
+  //   // ✅ Check email or phone format
+  //   if (/^\S+@\S+\.\S+$/.test(username)) {
+  //     user = await this.userRepo.findOne({
+  //       where: { email: username },
+  //       relations: { role: true },
+  //     });
+  //   } else if (/^\+?[0-9]{7,15}$/.test(username)) {
+  //     user = await this.userRepo.findOne({
+  //       where: { phone: username },
+  //       relations: { role: true },
+  //     });
+  //   } else {
+  //     return {
+  //       success: false,
+  //       status: 400,
+  //       message: 'Invalid username. Must be email or phone.',
+  //       data: [],
+  //     };
+  //   }
+
+  //   if (!user) {
+  //     return {
+  //       success: false,
+  //       status: 401,
+  //       message: 'User not found.',
+  //       data: [],
+  //     };
+  //   }
+
+  //   const isPasswordValid = await bcrypt.compare(password, user.password);
+  //   if (!isPasswordValid) {
+  //     return {
+  //       success: false,
+  //       status: 401,
+  //       message: 'Invalid credentials.',
+  //       data: [],
+  //     };
+  //   }
+
+  //   // ✅ If user not verified — send OTP safely
+  //   if (!user.isOtpVerified) {
+  //     const recentOtp = await this.otpRepo.findOne({
+  //       where: {
+  //         email: user.email,
+  //         otpType: 'verify',
+  //         isUsed: false,
+  //         expiresAt: MoreThan(new Date()),
+  //       },
+  //       order: { id: 'DESC' },
+  //     });
+
+  //     if (recentOtp) {
+  //       const secondsLeft = Math.floor((recentOtp.expiresAt.getTime() - Date.now()) / 1000);
+  //       return {
+  //         success: false,
+  //         status: 403,
+  //         message: `User not verified. Please wait ${secondsLeft} seconds before requesting another OTP.`,
+  //         data: [],
+  //       };
+  //     }
+
+  //     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  //     await this.otpRepo.save({
+  //       email: user.email,
+  //       channel: 'email',
+  //       otpCode,
+  //       otpType: 'verify',
+  //       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+  //       user,
+  //     });
+
+  //     let emailSent = true;
+  //     try {
+  //       await this.emailService.sendTemplateNotification({
+  //         user,
+  //         template: 'welcome-email',
+  //         data: { otp: otpCode },
+  //       });
+  //     } catch (err) {
+  //       emailSent = false;
+  //       this.logger.error('Failed to send verification email', err.stack || err);
+  //     }
+
+  //     return {
+  //       success: false,
+  //       status: 403,
+  //       message: emailSent
+  //         ? 'User not verified. OTP sent to your email.'
+  //         : 'User not verified. OTP generated but failed to send email.',
+  //       data: [],
+  //     };
+  //   }
+
+  //   // ✅ All good — proceed with login
+  //   const ip = req.ip;
+  //   const token = this.jwtService.sign({
+  //     sub: user.id,
+  //     role_id: user.role?.id ?? null,
+  //     type: 'user',
+  //     email: user.email,
+  //   });
+
+  //   user.lastLoginAt = new Date();
+  //   user.lastLoginIp = ip;
+  //   await this.userRepo.save(user);
+
+  //   // ✅ Device token handling
+  //   if (device_token) {
+  //     const existingDeviceToken = await this.deviceTokenRepo.findOne({
+  //       where: { deviceToken: device_token },
+  //     });
+
+  //     if (existingDeviceToken) {
+  //       existingDeviceToken.ipAddress = ip;
+  //       existingDeviceToken.jwtToken = token;
+  //       existingDeviceToken.user = user;
+  //       existingDeviceToken.user_id = user.id;
+  //       await this.deviceTokenRepo.save(existingDeviceToken);
+  //     } else {
+  //       await this.deviceTokenRepo.save({
+  //         user,
+  //         user_id: user.id,
+  //         deviceToken: device_token,
+  //         jwtToken: token,
+  //         ipAddress: ip,
+  //         role: 'User',
+  //       });
+  //     }
+  //   }
+
+  //   // ✅ Remove sensitive fields before sending response
+  //   const { password: _, verificationCode, rememberToken, ...safeUser } = user;
+
+  //   return {
+  //     success: true,
+  //     status: 200,
+  //     message: 'User logged in successfully.',
+  //     data: {
+  //       token,
+  //       user: safeUser,
+  //     },
+  //   };
+  // }
   /* -------------------------- Login Logic ------------------------ */
   async login(dto: LoginDto, req: Request) {
     const { username, password, device_token } = dto;
-console.log(username, password, device_token,"username, password, device_token")
     let user: UserEntity | null = null;
-    
+
     // ✅ Check email or phone format
     if (/^\S+@\S+\.\S+$/.test(username)) {
       user = await this.userRepo.findOne({
@@ -465,12 +616,26 @@ console.log(username, password, device_token,"username, password, device_token")
 
     // ✅ All good — proceed with login
     const ip = req.ip;
-    const token = this.jwtService.sign({
-      sub: user.id,
-      role_id: user.role?.id ?? null,
-      type: 'user',
-      email: user.email,
-    });
+
+    // 🟢 Access Token (short-lived)
+    const accessToken = this.jwtService.sign(
+      {
+        sub: user.id,
+        role_id: user.role?.id ?? null,
+        type: 'user',
+        email: user.email,
+      },
+      { expiresIn: '1h' }
+    );
+
+    // 🟢 Refresh Token (long-lived)
+    const refreshToken = this.jwtService.sign(
+      {
+        sub: user.id,
+        type: 'refresh',
+      },
+      { expiresIn: '7d' }
+    );
 
     user.lastLoginAt = new Date();
     user.lastLoginIp = ip;
@@ -484,7 +649,7 @@ console.log(username, password, device_token,"username, password, device_token")
 
       if (existingDeviceToken) {
         existingDeviceToken.ipAddress = ip;
-        existingDeviceToken.jwtToken = token;
+        existingDeviceToken.jwtToken = refreshToken; // save refresh token here
         existingDeviceToken.user = user;
         existingDeviceToken.user_id = user.id;
         await this.deviceTokenRepo.save(existingDeviceToken);
@@ -493,7 +658,7 @@ console.log(username, password, device_token,"username, password, device_token")
           user,
           user_id: user.id,
           deviceToken: device_token,
-          jwtToken: token,
+          jwtToken: refreshToken, // save refresh token here
           ipAddress: ip,
           role: 'User',
         });
@@ -508,7 +673,8 @@ console.log(username, password, device_token,"username, password, device_token")
       status: 200,
       message: 'User logged in successfully.',
       data: {
-        token,
+        token: refreshToken,  // refresh token
+        accessToken,          // access token
         user: safeUser,
       },
     };
@@ -611,95 +777,95 @@ console.log(username, password, device_token,"username, password, device_token")
   }
 
 
-async resendOtp(dto: ResendOtpDto) {
-  const queryRunner = this.dataSource.createQueryRunner();
-  await queryRunner.connect();
-  await queryRunner.startTransaction();
+  async resendOtp(dto: ResendOtpDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-  try {
-    const userRepo = queryRunner.manager.getRepository(UserEntity);
-    const otpRepo = queryRunner.manager.getRepository(Otp);
+    try {
+      const userRepo = queryRunner.manager.getRepository(UserEntity);
+      const otpRepo = queryRunner.manager.getRepository(Otp);
 
-    const user = await userRepo.findOneOrFail({ where: { email: dto.email } });
+      const user = await userRepo.findOneOrFail({ where: { email: dto.email } });
 
-    // ✅ 1 min ke andar agar koi OTP request hui hai toh error return karo
-    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
-    const recentOtp = await otpRepo.findOne({
-      where: {
-        email: dto.email,
-        otpType: dto.otp_type,
-        createdAt: MoreThan(oneMinuteAgo), // sirf 1 min ka check
-      },
-      order: { id: 'DESC' },
-    });
+      // ✅ 1 min ke andar agar koi OTP request hui hai toh error return karo
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+      const recentOtp = await otpRepo.findOne({
+        where: {
+          email: dto.email,
+          otpType: dto.otp_type,
+          createdAt: MoreThan(oneMinuteAgo), // sirf 1 min ka check
+        },
+        order: { id: 'DESC' },
+      });
 
-    if (recentOtp) {
-      const secondsLeft = 60 - Math.floor((Date.now() - recentOtp.createdAt.getTime()) / 1000);
+      if (recentOtp) {
+        const secondsLeft = 60 - Math.floor((Date.now() - recentOtp.createdAt.getTime()) / 1000);
+        return {
+          success: false,
+          message: `Please wait ${secondsLeft} seconds before requesting another OTP.`,
+        };
+      }
+
+      // ✅ Purane OTP invalidate karo
+      await otpRepo.update(
+        { email: dto.email, otpType: dto.otp_type, isUsed: false },
+        { isUsed: true }
+      );
+
+      // ✅ Naya OTP generate karo
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await otpRepo.save({
+        email: user.email,
+        otpCode,
+        otpType: dto.otp_type, // ✅ same type rakho
+        expiresAt,
+        isUsed: false,
+        otpableType: 'User',
+        createdAt: new Date(),
+      });
+
+      await queryRunner.commitTransaction();
+
+      let emailSent = true;
+      try {
+        await this.emailService.sendTemplateNotification({
+          user,
+          template: dto.otp_type === 'verify' ? 'welcome-email' : 'forgot-password',
+          data: { otp: otpCode },
+        });
+      } catch (emailErr) {
+        emailSent = false;
+        console.error('[Resend OTP] Failed to send email:', emailErr?.message);
+      }
+
+      return {
+        success: true,
+        message: emailSent
+          ? 'OTP sent successfully to your email.'
+          : 'OTP generated but email sending failed. Contact support.',
+        data: { email: user.email, otpType: dto.otp_type, emailSent },
+      };
+
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
       return {
         success: false,
-        message: `Please wait ${secondsLeft} seconds before requesting another OTP.`,
+        message: 'Something went wrong while resending OTP.',
+        error: err?.message,
       };
+    } finally {
+      await queryRunner.release();
     }
-
-    // ✅ Purane OTP invalidate karo
-    await otpRepo.update(
-      { email: dto.email, otpType: dto.otp_type, isUsed: false },
-      { isUsed: true }
-    );
-
-    // ✅ Naya OTP generate karo
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    await otpRepo.save({
-      email: user.email,
-      otpCode,
-      otpType: dto.otp_type, // ✅ same type rakho
-      expiresAt,
-      isUsed: false,
-      otpableType: 'User',
-      createdAt: new Date(),
-    });
-
-    await queryRunner.commitTransaction();
-
-    let emailSent = true;
-    try {
-      await this.emailService.sendTemplateNotification({
-        user,
-        template: dto.otp_type === 'verify' ? 'welcome-email' : 'forgot-password',
-        data: { otp: otpCode },
-      });
-    } catch (emailErr) {
-      emailSent = false;
-      console.error('[Resend OTP] Failed to send email:', emailErr?.message);
-    }
-
-    return {
-      success: true,
-      message: emailSent
-        ? 'OTP sent successfully to your email.'
-        : 'OTP generated but email sending failed. Contact support.',
-      data: { email: user.email, otpType: dto.otp_type, emailSent },
-    };
-
-  } catch (err) {
-    await queryRunner.rollbackTransaction();
-    return {
-      success: false,
-      message: 'Something went wrong while resending OTP.',
-      error: err?.message,
-    };
-  } finally {
-    await queryRunner.release();
   }
-}
 
 
 
   /* -------------------------- Logout Logic ------------------------ */
   async logout(req: Request) {
-    
+
 
     const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -748,7 +914,7 @@ async resendOtp(dto: ResendOtpDto) {
 
       const jwtUser = req.user as any;
 
-      
+
       const existingUser = await this.userRepo.findOne({
 
         where: { id: jwtUser.id },
@@ -773,9 +939,9 @@ async resendOtp(dto: ResendOtpDto) {
 
       }
 
-      
+
       const hashedPassword = await bcrypt.hash(dto.password, 10);
-      
+
 
       await this.userRepo.update(jwtUser.id, {
 
@@ -784,7 +950,7 @@ async resendOtp(dto: ResendOtpDto) {
         isOtpVerified: true,
 
       });
-      
+
 
       return {
 
@@ -808,7 +974,7 @@ async resendOtp(dto: ResendOtpDto) {
 
     } catch (error) {
 
-      
+
       return {
 
         status: 500,
@@ -825,6 +991,68 @@ async resendOtp(dto: ResendOtpDto) {
 
   }
 
+  async refreshToken(token: string) {
+    try {
+      const payload = this.jwtService.verify(token); // verify refresh token
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('Invalid token type');
+      }
+
+      const user = await this.userRepo.findOne({ where: { id: payload.sub } });
+      if (!user) throw new UnauthorizedException('User not found');
+
+      // generate new access token
+      const newAccessToken = this.jwtService.sign(
+        {
+          sub: user.id,
+          role_id: user.role?.id ?? null,
+          type: 'user',
+          email: user.email,
+        },
+        { expiresIn: '1h' },
+      );
+
+      return { accessToken: newAccessToken };
+    } catch (err) {
+      throw new UnauthorizedException('Refresh token invalid or expired');
+    }
+  }
 
 
+  async getUserData(token: string) {
+    if (!token) {
+      throw new UnauthorizedException('No token provided.');
+    }
+
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(token); // throws if invalid/expired
+    } catch (err) {
+      throw new UnauthorizedException('Invalid or expired token.');
+    }
+
+    if (!payload.sub) {
+      throw new UnauthorizedException('Invalid token payload.');
+    }
+
+    // Fetch user with role
+    const user = await this.userRepo.findOne({
+      where: { id: payload.sub },
+      relations: ['role'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
+
+    // Remove sensitive fields
+    const { password, verificationCode, rememberToken, ...safeUser } = user;
+
+    return {
+      success: true,
+      status: 200,
+      message: 'User data fetched successfully.',
+      data: safeUser,
+    };
+  }
 }

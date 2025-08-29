@@ -29,6 +29,9 @@ export class Order {
   @ManyToOne(() => Restaurant, (restaurant) => restaurant.orders)
   restaurant: Restaurant;
 
+  @Column({ type: 'varchar', nullable: true })
+  updatedByAdminId?: string;
+
   /* ---------------- Products in Order ---------------- */
   @ManyToMany(() => MenuItem, { eager: true })
   @JoinTable()

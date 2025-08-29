@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from 'src/models';
 import { Repository } from 'typeorm';
@@ -32,6 +32,22 @@ export class OrderService {
 
         if (!order) throw new NotFoundException('Order not found');
         return order;
+    }
+
+
+
+    // Service
+    async updateOrderStatus(dto: UpdateOrderStatusDto, adminId: string) {
+        const orderId = Number(dto.orderId); // <-- convert string to number
+        if (isNaN(orderId)) throw new BadRequestException('Invalid order ID');
+
+        const order = await this.orderRepo.findOne({ where: { id: orderId } });
+        if (!order) throw new NotFoundException(`Order ${orderId} not found`);
+
+        order.status = dto.status;
+        order.updatedByAdminId = adminId;
+
+        return this.orderRepo.save(order);
     }
 
 

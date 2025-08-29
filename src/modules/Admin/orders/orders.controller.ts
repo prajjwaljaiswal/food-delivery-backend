@@ -1,12 +1,13 @@
-import { Controller, Get, Param, Delete, Patch, Body, UseGuards, Query, Post, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Param, Delete, Patch, Body, UseGuards, Query, Post, BadRequestException, Put, Req } from '@nestjs/common';
 import { OrderService } from './orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { JwtAuthGuard, RoleGuard, Roles } from 'src/common/guards/jwt-auth.guard';
 import { RoleEnum } from 'src/common/enums/roles.enum';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 
-// @UseGuards(JwtAuthGuard, RoleGuard)
-// @Roles(RoleEnum.ADMIN)
+@UseGuards(JwtAuthGuard, RoleGuard)
+@Roles(RoleEnum.ADMIN)
 @Controller('admin/orders')
 export class OrderController {
     constructor(private readonly orderService: OrderService) { }
@@ -16,16 +17,34 @@ export class OrderController {
         return this.orderService.findAll();
     }
 
- @Get('/list')
-async getOrdersSummary(
-  @Query('page') page: string = '1',
-  @Query('limit') limit: string = '10'
-) {
-  const pageNumber = parseInt(page, 10);
-  const pageSize = parseInt(limit, 10);
+    @Get('/list')
+    async getOrdersSummary(
+        @Query('page') page: string = '1',
+        @Query('limit') limit: string = '10'
+    ) {
+        const pageNumber = parseInt(page, 10);
+        const pageSize = parseInt(limit, 10);
 
-  return this.orderService.getOrdersSummary(pageNumber, pageSize);
-}
+        return this.orderService.getOrdersSummary(pageNumber, pageSize);
+    }
+
+    // Controller
+    @Put('/update-status')
+    async updateOrderStatus(@Body() dto: UpdateOrderStatusDto, @Req() req: any) {
+        try {
+            console.log("zfsadfhsdfnhmksd", dto, req)
+            const adminId = req.user?.id;
+            const updatedOrder = await this.orderService.updateOrderStatus(dto, adminId);
+            return {
+                success: true,
+                message: 'Order status updated successfully',
+                data: updatedOrder,
+            };
+        } catch (err) {
+            throw new HttpException(err.message || 'Failed to update order', HttpStatus.BAD_REQUEST);
+        }
+    }
+
 
 
     @Get(':id')

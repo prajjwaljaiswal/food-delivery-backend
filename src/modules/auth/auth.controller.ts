@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, Get, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -9,6 +9,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { ResendOtpDto } from './dto/Resendotp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RefreshTokenDto } from './dto/RefreshTokenDto.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -53,5 +54,18 @@ export class AuthController {
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.sendForgotPasswordOtp(dto);
+  }
+
+
+  @Post('refresh-token')
+  async refreshToken(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto.token);
+  }
+  @Get('me')
+  async getMe(@Headers('Authorization') authHeader: string) {
+    if (!authHeader) return { success: false, status: 401, message: 'No token provided.' };
+
+    const token = authHeader.replace('Bearer ', '');
+    return this.authService.getUserData(token);
   }
 }
