@@ -96,6 +96,7 @@ export class DriverController {
   //   return this.driverService.findAll(page, limit, { keyword });
   // }
   // driver.controller.ts
+  
   @Get()
   async getAllDrivers(
     @Query('page') page: string,
@@ -105,6 +106,8 @@ export class DriverController {
     const pageSize = parseInt(limit, 10) || 10; // default 10 per page
     return this.driverService.getAllDrivers(pageNumber, pageSize);
   }
+
+
   /* -------------------------- Get One Driver ------------------------ */
   @Get(':id')
   findOne(@Param('id') id: string) {

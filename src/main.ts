@@ -12,10 +12,10 @@ async function bootstrap() {
  
   // ✅ CORS sabse pehle enable karo
   app.enableCors({
-    origin: '*',
+    origin: 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false, // '*' ke saath true nahi chalega
+    credentials: true, // '*' ke saath true nahi chalega
   });
  
   // ✅ Middleware setup

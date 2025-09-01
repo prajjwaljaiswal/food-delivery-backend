@@ -992,31 +992,42 @@ export class AuthService {
   }
 
   async refreshToken(token: string) {
+    let payload: any;
     try {
-      const payload = this.jwtService.verify(token); // verify refresh token
-      if (payload.type !== 'refresh') {
-        throw new UnauthorizedException('Invalid token type');
-      }
-
-      const user = await this.userRepo.findOne({ where: { id: payload.sub } });
-      if (!user) throw new UnauthorizedException('User not found');
-
-      // generate new access token
-      const newAccessToken = this.jwtService.sign(
-        {
-          sub: user.id,
-          role_id: user.role?.id ?? null,
-          type: 'user',
-          email: user.email,
-        },
-        { expiresIn: '1h' },
-      );
-
-      return { accessToken: newAccessToken };
+      payload = this.jwtService.verify(token, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
     } catch (err) {
       throw new UnauthorizedException('Refresh token invalid or expired');
     }
+
+    if (payload.type !== 'refresh') {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
+    const user = await this.userRepo.findOne({ where: { id: payload.sub } });
+    if (!user) throw new UnauthorizedException('User not found');
+
+    // Generate new tokens
+    const newAccessToken = this.jwtService.sign(
+      { sub: user.id, role_id: user.role?.id, type: 'user', email: user.email },
+      { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '1h' }
+    );
+
+
+    const newRefreshToken = this.jwtService.sign(
+      { sub: user.id, type: 'refresh' },
+      { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }
+    );
+
+    // Optional: save hashed refreshToken in DB
+
+    user.refreshToken = await bcrypt.hash(newRefreshToken, parseInt(process.env.BCRYPT_SALT_ROUNDS || '10'));
+    await this.userRepo.save(user);
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
+
 
 
   async getUserData(token: string) {

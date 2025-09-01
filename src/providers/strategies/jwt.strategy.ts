@@ -47,9 +47,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       id: payload.sub,
       userId: payload.sub, // For backward compatibility
-      role_id: payload.role_id,
+      role_id: payload.role_id ?? null,
       type: payload.type,
-      email: payload.email,
+      email: payload.email ?? null,
     };
   }
 }

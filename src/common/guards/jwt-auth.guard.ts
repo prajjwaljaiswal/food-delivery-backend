@@ -15,14 +15,19 @@ import { RoleEnum } from '../enums/roles.enum';
 export class JwtAuthGuard extends AuthGuard('jwt') {
   handleRequest(err, user, info, context) {
     const req = context.switchToHttp().getRequest();
+    // console.log('→ Checking JWT Auth Guard', req);
+    const token = req.cookies?.accessToken || req.headers['authorization']?.split(' ')[1];
+    if (!token) {
+      console.log('⛔ No token provided');
+      throw new UnauthorizedException('No token provided');
+    }
 
     if (err || !user) {
-      console.log('⛔ User not authenticated');
+      console.log('⛔ Invalid token or user not found');
       throw err || new UnauthorizedException('Unauthorized');
     }
 
-    console.log('✅ JWT user authenticated');
-    return user; // attaches user to req.user
+    return user;
   }
 }
 

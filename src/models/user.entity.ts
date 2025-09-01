@@ -20,13 +20,14 @@ export class UserEntity {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 
-  @ManyToOne(() => RoleEntity, (role) => role.users, {
+ @ManyToOne(() => RoleEntity, (role) => role.users, {
     nullable: true,
     onDelete: 'CASCADE',
+    eager: true,
   })
-  @ManyToOne(() => RoleEntity, { eager: true })
   @JoinColumn({ name: 'role_id' })
   role: RoleEntity;
+
 
   // Inside @Entity class (bottom me add karo)
   @OneToMany(() => Order, (order) => order.user)
@@ -63,6 +64,12 @@ export class UserEntity {
 
   @Column({ name: 'zip_code', type: 'varchar', nullable: true })
   zipCode?: string;
+
+  
+
+@Column({ type: 'text', nullable: true })
+refreshToken?: string;
+
 
   @Column({ type: 'varchar' })
   password: string;
