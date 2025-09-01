@@ -16,6 +16,7 @@ import { RoleEntity } from 'src/models';
 import { UnauthorizedException } from '@nestjs/common';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Request } from 'express';
+import { Response as ExpressResponse } from 'express';
 import { DeviceToken } from 'src/models';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -618,6 +619,7 @@ export class AuthService {
     const ip = req.ip;
 
     // 🟢 Access Token (short-lived)
+
     const accessToken = this.jwtService.sign(
       {
         sub: user.id,
@@ -864,47 +866,35 @@ export class AuthService {
 
 
   /* -------------------------- Logout Logic ------------------------ */
-  async logout(req: Request) {
-
-
+  async logout(req: Request, res: ExpressResponse) {
     const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return {
-        status: false,
-        message: 'Authorization token missing',
-        data: [],
-      };
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const decoded = this.jwtService.decode(token) as any;
-
-    if (!decoded || !decoded.userId) {
-      return {
-        status: false,
-        message: 'Invalid token',
-        data: [],
-      };
-    }
-
+    const token = authHeader?.replace('Bearer ', '');
+    const decoded = this.jwtService.decode(token as string) as any;
     const user = await this.userRepo.findOne({ where: { id: decoded.userId } });
-    if (!user) {
-      return {
-        status: false,
-        message: 'User not found',
-        data: [],
-      };
+
+    if (user) {
+      await this.deviceTokenRepo.delete({ user: { id: user.id } });
     }
 
-    // 🗑 Logout from all devices
-    await this.deviceTokenRepo.delete({ user: { id: user.id } });
+    // Clear cookies
+    res.cookie('refreshToken', '', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      expires: new Date(0),
+    });
+    res.cookie('adminToken', '', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      expires: new Date(0),
+    });
 
-    return {
-      status: true,
-      message: 'User logged out successfully',
-      data: [],
-    };
+    return res.status(200).json({ status: true, message: 'User logged out successfully', data: [] });
   }
+
 
   /* -------------------------- Reset Password ------------------------ */
 
@@ -1066,4 +1056,8 @@ export class AuthService {
       data: safeUser,
     };
   }
+
+
+
+
 }

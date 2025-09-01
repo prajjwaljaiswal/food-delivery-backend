@@ -11,7 +11,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
   // ✅ CORS sabse pehle enable karo
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  // process.env.FRONTEND_URL ||
+
+  const frontendUrl =  'http://localhost:3000'  
 
   app.enableCors({
     origin: frontendUrl,

@@ -32,7 +32,7 @@ export class OrderController {
     @Put('/update-status')
     async updateOrderStatus(@Body() dto: UpdateOrderStatusDto, @Req() req: any) {
         try {
-            console.log("zfsadfhsdfnhmksd", dto, req)
+            // console.log("zfsadfhsdfnhmksd", dto, req)
             const adminId = req.user?.id;
             const updatedOrder = await this.orderService.updateOrderStatus(dto, adminId);
             return {
