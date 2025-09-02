@@ -129,7 +129,6 @@ export class RestaurantService {
                 dietaryTags: true
             },
         });
-
         if (!menus || menus.length === 0) {
             throw new NotFoundException(`No menus found for restaurant ID: ${restaurantId}`);
         }

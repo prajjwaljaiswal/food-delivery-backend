@@ -23,6 +23,7 @@ async function bootstrap() {
   // });
   const allowedOrigins = [
     'http://localhost:3000',
+    'http://localhost:4000',
     'https://food-ordering.projectstatus.co.uk',
     process.env.FRONTEND_URL, // optional: in case you set a custom URL in env
   ].filter(Boolean); // removes undefined if FRONTEND_URL is not set
