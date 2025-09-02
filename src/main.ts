@@ -13,13 +13,32 @@ async function bootstrap() {
   // ✅ CORS sabse pehle enable karo
   // process.env.FRONTEND_URL ||
 
-  const frontendUrl =  'http://localhost:3000'  
+  // const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'  
+
+  // app.enableCors({
+  //   origin: frontendUrl,
+  //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  //   allowedHeaders: ['Content-Type', 'Authorization'],
+  //   credentials: true, // '*' ke saath true nahi chalega
+  // });
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://food-ordering.projectstatus.co.uk',
+    process.env.FRONTEND_URL, // optional: in case you set a custom URL in env
+  ].filter(Boolean); // removes undefined if FRONTEND_URL is not set
 
   app.enableCors({
-    origin: frontendUrl,
+    origin: (origin, callback) => {
+      // allow requests with no origin (like Postman) or from allowed origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS policy: Origin not allowed'));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true, // '*' ke saath true nahi chalega
+    credentials: true, // must be true if sending cookies
   });
 
   // ✅ Middleware setup
