@@ -55,14 +55,7 @@ export class Order {
   paymentMethod?: string; // Example: 'Cash on Delivery', 'UPI', 'Card'
 
   @Column({ nullable: true })
-  couponCode?: string;
-
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
-  discountAmount: number;
-
-  /* ---------------- Order Actions ---------------- */
-  @Column({ nullable: true })
-  action?: string; // Example: 'Cancelled by User', 'Rejected by Restaurant'
+  addressId?: number;
 
   /* ---------------- Timestamps ---------------- */
   @CreateDateColumn()

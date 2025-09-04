@@ -24,7 +24,7 @@ export class UsersService {
 
 
     async createOrder(dto: CreateOrderDto) {
-        const { userId, restaurantId, menuItemIds, paymentMethod, couponCode, isPaid, totalAmount, discountAmount } = dto;
+        const { userId, restaurantId, menuItemIds, paymentMethod, isPaid, totalAmount, addressId } = dto;
 
         // 1️⃣ User fetch karo
         const user = await this.userRepo.findOne({ where: { id: userId } });
@@ -51,13 +51,13 @@ export class UsersService {
         const finalTotal = totalAmount;
 
         // 5️⃣ Discount: calculate only if frontend didn’t send
-        let finalDiscount = discountAmount ?? 0;
-        if (discountAmount == null && couponCode) {
-            const code = couponCode.trim().toUpperCase();
-            if (code === 'NEW50' || code === 'NEWUSER50') {
-                finalDiscount = finalTotal * 0.5;
-            }
-        }
+        // let finalDiscount = discountAmount ?? 0;
+        // if (discountAmount == null && couponCode) {
+        //     const code = couponCode.trim().toUpperCase();
+        //     if (code === 'NEW50' || code === 'NEWUSER50') {
+        //         finalDiscount = finalTotal * 0.5;
+        //     }
+        // }
 
         // 6️⃣ Order create karo
         const order = this.orderRepo.create({
@@ -65,10 +65,9 @@ export class UsersService {
             restaurant,
             MenuItem: menuItems,
             totalAmount: finalTotal,
-            discountAmount: finalDiscount,
             paymentMethod,
             isPaid: isPaid || false,
-            couponCode,
+            addressId,
             status: OrderStatus.PENDING,
         });
 

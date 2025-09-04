@@ -84,14 +84,14 @@ export class Restaurant {
     enableTableBooking: boolean;
 
     /* ---------------- Extra Fields ---------------- */
-    @Column({ nullable: true })
-    logo?: string;   // single logo image
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    logo?: string | null;
 
     @Column({ type: 'json', nullable: true })
-    galleryImages?: string[]; // multiple gallery images
+    galleryImages?: string[] | null; // multiple gallery images
 
     @Column({ type: 'json', nullable: true })
-    bannerImages?: string[];  // multiple banner images
+    bannerImages?: string[] | null; // multiple banner images
     /* ------------------------------------------------ */
 
     @Column({ default: false })
@@ -129,15 +129,16 @@ export class Restaurant {
     orders: Order[];
 
     /* ---------------- Certificates ---------------- */
-    @Column({ nullable: true })
-    foodSafetyCertificate?: string;   // file path or URL
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    foodSafetyCertificate?: string | null;  // file path or URL
 
-    @Column({ nullable: true })
-    taxIdCertificate?: string;        // file path or URL
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    taxIdCertificate?: string | null;       // file path or URL
 
-    @Column({ nullable: true })
-    businessLicense?: string;         // file path or URL
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    businessLicense?: string | null;        // file path or URL
 
-    @Column({ nullable: true })
-    insuranceCertificate?: string;    // file path or URL
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    insuranceCertificate?: string | null;   // file path or URL
+
 }

@@ -8,6 +8,8 @@ import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { Category, Driver, Order, Restaurant, UserEntity } from 'src/models';
 import * as bcrypt from 'bcrypt';
 import { MenuItem } from 'src/models/resturant-menu.entity';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class RestaurantService {
@@ -35,7 +37,7 @@ export class RestaurantService {
 
     // 2️⃣ Password hash
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-        // 3️⃣ Create restaurant entity
+    // 3️⃣ Create restaurant entity
     const restaurant = this.restaurantRepo.create({
       ...dto,
       password: hashedPassword,
@@ -194,111 +196,247 @@ export class RestaurantService {
   }
 
 
-  async update(
-    id: number,
-    dto: UpdateRestaurantDto,
-  ) {
-    // 1️⃣ Find existing restaurant
-    const restaurant = await this.restaurantRepo.findOne({ where: { id } });
-    if (!restaurant) {
-      return {
-        status: 404,
-        success: false,
-        message: 'Restaurant not found',
-        data: null,
-      };
-    }
+  // async update(
+  //   id: number,
+  //   dto: UpdateRestaurantDto,
+  // ) {
+  //   // 1️⃣ Find existing restaurant
+  //   const restaurant = await this.restaurantRepo.findOne({ where: { id } });
+  //   if (!restaurant) {
+  //     return {
+  //       status: 404,
+  //       success: false,
+  //       message: 'Restaurant not found',
+  //       data: null,
+  //     };
+  //   }
 
-    // 2️⃣ Check email duplication
-    if (dto.email) {
-      const existingEmail = await this.restaurantRepo.findOne({ where: { email: dto.email } });
-      if (existingEmail && existingEmail.id !== id) {
-        return {
-          status: 409,
-          success: false,
-          message: 'Another restaurant with this email already exists.',
-        };
-      }
-    }
+  //   // 2️⃣ Check email duplication
+  //   if (dto.email) {
+  //     const existingEmail = await this.restaurantRepo.findOne({ where: { email: dto.email } });
+  //     if (existingEmail && existingEmail.id !== id) {
+  //       return {
+  //         status: 409,
+  //         success: false,
+  //         message: 'Another restaurant with this email already exists.',
+  //       };
+  //     }
+  //   }
 
-    // 3️⃣ Check phone duplication
-    if (dto.phone) {
-      const existingPhone = await this.restaurantRepo.findOne({ where: { phone: dto.phone } });
-      if (existingPhone && existingPhone.id !== id) {
-        return {
-          status: 409,
-          success: false,
-          message: 'Another restaurant with this phone already exists.',
-        };
-      }
-    }
+  //   // 3️⃣ Check phone duplication
+  //   if (dto.phone) {
+  //     const existingPhone = await this.restaurantRepo.findOne({ where: { phone: dto.phone } });
+  //     if (existingPhone && existingPhone.id !== id) {
+  //       return {
+  //         status: 409,
+  //         success: false,
+  //         message: 'Another restaurant with this phone already exists.',
+  //       };
+  //     }
+  //   }
 
-    // 4️⃣ Update allowed fields
-    Object.assign(restaurant, dto);
+  //   // Delete images from filesystem & DB if requested
+  //   // 4️⃣ Delete images from filesystem & DB if requested
+  //   if (dto.deletedImages && typeof dto.deletedImages === 'object') {
+  //     for (const [key, filesToDelete] of Object.entries(dto.deletedImages)) {
+  //       if (Array.isArray(filesToDelete) && filesToDelete.length > 0) {
+  //         filesToDelete.forEach((filePath) => {
+  //           const fullPath = path.join(process.cwd(), filePath);
+  //           if (fs.existsSync(fullPath)) {
+  //             fs.unlinkSync(fullPath);
+  //           }
+  //         });
 
-    // 6️⃣ Merge or replace weeklySchedule
-    if (dto.weeklySchedule) {
-      restaurant.weeklySchedule = {
-        ...(restaurant.weeklySchedule || {}),
-        ...dto.weeklySchedule,
-      };
-    }
+  //         // Remove deleted images from DB
+  //         if (Array.isArray(restaurant[key])) {
+  //           restaurant[key] = restaurant[key].filter((img) => !filesToDelete.includes(img));
+  //         } else if (typeof restaurant[key] === 'string') {
+  //           if (filesToDelete.includes(restaurant[key])) {
+  //             restaurant[key] = null;
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  //   // 4️⃣ Update allowed fields
+  //   Object.assign(restaurant, dto);
 
-    // 7️⃣ Boolean fields
-    restaurant.enableOnlineOrders = dto.enableOnlineOrders ?? restaurant.enableOnlineOrders ?? false;
-    restaurant.enableTableBooking = dto.enableTableBooking ?? restaurant.enableTableBooking ?? false;
+  //   // 6️⃣ Merge or replace weeklySchedule
+  //   if (dto.weeklySchedule) {
+  //     restaurant.weeklySchedule = {
+  //       ...(restaurant.weeklySchedule || {}),
+  //       ...dto.weeklySchedule,
+  //     };
+  //   }
 
-    // 8️⃣ Replace images if new ones uploaded
-    if (dto.logo) restaurant.logo = dto.logo;
+  //   // 7️⃣ Boolean fields
+  //   restaurant.enableOnlineOrders = dto.enableOnlineOrders ?? restaurant.enableOnlineOrders ?? false;
+  //   restaurant.enableTableBooking = dto.enableTableBooking ?? restaurant.enableTableBooking ?? false;
 
-    // 🔟 Save updated restaurant
-    await this.restaurantRepo.save(restaurant);
+  //   // 8️⃣ Replace images if new ones uploaded
+  //   if (dto.logo) restaurant.logo = dto.logo;
 
-    // 1️⃣1️⃣ Re-fetch updated restaurant without password
-    const updatedRestaurant = await this.restaurantRepo.findOne({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        ownerName: true,
-        role: true,
-        address: true,
-        email: true,
-        phone: true,
-        secondaryPhone: true,
-        cuisine: true,
-        country: true,
-        state: true,
-        city: true,
-        pincode: true,
-        deliveryTime: true,
-        description: true,
-        enableOnlineOrders: true,
-        enableTableBooking: true,
-        is_verified: true,
-        logo: true,
-        galleryImages: true,
-        bannerImages: true,
-        foodSafetyCertificate: true,
-        taxIdCertificate: true,
-        businessLicense: true,
-        insuranceCertificate: true,
-        opening_time: true,
-        closing_time: true,
-        weeklySchedule: true,
-        is_active: true,
-        created_at: true,
-        updated_at: true,
-      },
-    });
+  //   // 🔟 Save updated restaurant
+  //   await this.restaurantRepo.save(restaurant);
 
-    return {
-      status: 200,
-      success: true,
-      message: 'Restaurant updated successfully',
-      data: updatedRestaurant,
-    };
-  }
+  //   // 1️⃣1️⃣ Re-fetch updated restaurant without password
+  //   const updatedRestaurant = await this.restaurantRepo.findOne({
+  //     where: { id },
+  //     select: {
+  //       id: true,
+  //       name: true,
+  //       ownerName: true,
+  //       role: true,
+  //       address: true,
+  //       email: true,
+  //       phone: true,
+  //       secondaryPhone: true,
+  //       cuisine: true,
+  //       country: true,
+  //       state: true,
+  //       city: true,
+  //       pincode: true,
+  //       deliveryTime: true,
+  //       description: true,
+  //       enableOnlineOrders: true,
+  //       enableTableBooking: true,
+  //       is_verified: true,
+  //       logo: true,
+  //       galleryImages: true,
+  //       bannerImages: true,
+  //       foodSafetyCertificate: true,
+  //       taxIdCertificate: true,
+  //       businessLicense: true,
+  //       insuranceCertificate: true,
+  //       opening_time: true,
+  //       closing_time: true,
+  //       weeklySchedule: true,
+  //       is_active: true,
+  //       created_at: true,
+  //       updated_at: true,
+  //     },
+  //   });
+
+  //   return {
+  //     status: 200,
+  //     success: true,
+  //     message: 'Restaurant updated successfully',
+  //     data: updatedRestaurant,
+  //   };
+  // }
+
+
+
+  // async update(id: number, dto: UpdateRestaurantDto) {
+  //   const restaurant = await this.restaurantRepo.findOne({ where: { id } });
+  //   if (!restaurant) {
+  //     return { status: 404, success: false, message: 'Restaurant not found', data: null };
+  //   }
+
+  //   // Email duplication
+  //   if (dto.email) {
+  //     const existingEmail = await this.restaurantRepo.findOne({ where: { email: dto.email } });
+  //     if (existingEmail && existingEmail.id !== id) {
+  //       return { status: 409, success: false, message: 'Another restaurant with this email already exists.' };
+  //     }
+  //   }
+
+  //   // Phone duplication
+  //   if (dto.phone) {
+  //     const existingPhone = await this.restaurantRepo.findOne({ where: { phone: dto.phone } });
+  //     if (existingPhone && existingPhone.id !== id) {
+  //       return { status: 409, success: false, message: 'Another restaurant with this phone already exists.' };
+  //     }
+  //   }
+
+  //   // ---------------- Delete images ----------------
+  //   type ImageArrayFields = 'bannerImages' | 'galleryImages';
+  //   type SingleImageFields = 'logo' | 'foodSafetyCertificate' | 'taxIdCertificate' | 'businessLicense' | 'insuranceCertificate';
+
+  //   if (dto.deletedImages) {
+  //     for (const [key, filesToDelete] of Object.entries(dto.deletedImages)) {
+  //       if (!Array.isArray(filesToDelete) || filesToDelete.length === 0) continue;
+
+  //       // Delete from filesystem
+  //       filesToDelete.forEach(filePath => {
+  //         const fullPath = path.join(process.cwd(), filePath.replace(/^\//, '')); // remove starting slash
+  //         if (fs.existsSync(fullPath)) {
+  //           fs.unlinkSync(fullPath);
+  //           console.log('Deleted file:', fullPath);
+  //         } else {
+  //           console.log('File not found:', fullPath);
+  //         }
+  //       });
+
+  //       // Update DB
+  //       if ((['bannerImages', 'galleryImages'] as string[]).includes(key)) {
+  //         const fieldKey = key as ImageArrayFields;
+  //         const currentField: string[] = restaurant[fieldKey] || [];
+  //         restaurant[fieldKey] = currentField.filter(img => !filesToDelete.includes(img));
+  //       } else {
+  //         const fieldKey = key as SingleImageFields;
+  //         if (restaurant[fieldKey] && filesToDelete.includes(restaurant[fieldKey]!)) {
+  //           restaurant[fieldKey] = null;
+  //         }
+  //       }
+  //     }
+  //   }
+
+  //   // ---------------- Update remaining fields ----------------
+  //   const { deletedImages, ...restDto } = dto;
+  //   Object.assign(restaurant, restDto);
+
+  //   // Merge weeklySchedule
+  //   if (dto.weeklySchedule) {
+  //     restaurant.weeklySchedule = { ...(restaurant.weeklySchedule || {}), ...dto.weeklySchedule };
+  //   }
+
+  //   // Boolean fields
+  //   restaurant.enableOnlineOrders = dto.enableOnlineOrders ?? restaurant.enableOnlineOrders ?? false;
+  //   restaurant.enableTableBooking = dto.enableTableBooking ?? restaurant.enableTableBooking ?? false;
+
+  //   await this.restaurantRepo.save(restaurant);
+
+  //   const updatedRestaurant = await this.restaurantRepo.findOne({
+  //     where: { id },
+  //     select: {
+  //       id: true,
+  //       name: true,
+  //       ownerName: true,
+  //       role: true,
+  //       address: true,
+  //       email: true,
+  //       phone: true,
+  //       secondaryPhone: true,
+  //       cuisine: true,
+  //       country: true,
+  //       state: true,
+  //       city: true,
+  //       pincode: true,
+  //       deliveryTime: true,
+  //       description: true,
+  //       enableOnlineOrders: true,
+  //       enableTableBooking: true,
+  //       is_verified: true,
+  //       logo: true,
+  //       galleryImages: true,
+  //       bannerImages: true,
+  //       foodSafetyCertificate: true,
+  //       taxIdCertificate: true,
+  //       businessLicense: true,
+  //       insuranceCertificate: true,
+  //       opening_time: true,
+  //       closing_time: true,
+  //       weeklySchedule: true,
+  //       is_active: true,
+  //       created_at: true,
+  //       updated_at: true,
+  //     },
+  //   });
+
+  //   return { status: 200, success: true, message: 'Restaurant updated successfully', data: updatedRestaurant };
+  // }
+
 
   async remove(id: number) {
     const restaurant = await this.restaurantRepo.findOne({ where: { id } });

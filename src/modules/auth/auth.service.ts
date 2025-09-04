@@ -23,7 +23,23 @@ import { LoginDto } from './dto/login.dto';
 import { ResendOtpDto } from './dto/Resendotp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/RefreshTokenDto.dto';
+import { use } from 'passport';
+type LoginSuccess = {
+  success: true;
+  status: 200;
+  message: string;
+  data: {
+    token: string;
+    user: any;
+  };
+};
 
+type LoginFail = {
+  success: false;
+  status: number;
+  message: string;
+  data: [];
+};
 
 @Injectable()
 export class AuthService {
@@ -517,9 +533,13 @@ export class AuthService {
   //     },
   //   };
   // }
+
+
   /* -------------------------- Login Logic ------------------------ */
-  async login(dto: LoginDto, req: Request) {
+
+  async login(dto: LoginDto, req: Request): Promise<LoginSuccess | LoginFail> {
     const { username, password, device_token } = dto;
+    console.log('→ Login attempt', { username, password });
     let user: UserEntity | null = null;
 
     // ✅ Check email or phone format
@@ -533,6 +553,7 @@ export class AuthService {
         where: { phone: username },
         relations: { role: true },
       });
+      console.log(user, "user 2")
     } else {
       return {
         success: false,
@@ -541,12 +562,11 @@ export class AuthService {
         data: [],
       };
     }
-
     if (!user) {
       return {
         success: false,
         status: 401,
-        message: 'User not found.',
+        message: 'Invalid username or password.',
         data: [],
       };
     }
@@ -556,7 +576,7 @@ export class AuthService {
       return {
         success: false,
         status: 401,
-        message: 'Invalid credentials.',
+        message: 'Invalid Password.',
         data: [],
       };
     }
@@ -617,27 +637,17 @@ export class AuthService {
 
     // ✅ All good — proceed with login
     const ip = req.ip;
+    console.log(user.role?.name, "role")
+    console.log(user.role?.id, "role id")
 
-    // 🟢 Access Token (short-lived)
+    // const ip = req.ip;
+    const token = this.jwtService.sign({
+      sub: user.id,
+      role_id: user.role?.id ?? null,
+      type: 'user',
+      email: user.email,
+    });
 
-    const accessToken = this.jwtService.sign(
-      {
-        sub: user.id,
-        role_id: user.role?.id ?? null,
-        type: 'user',
-        email: user.email,
-      },
-      { expiresIn: '1h' }
-    );
-
-    // 🟢 Refresh Token (long-lived)
-    const refreshToken = this.jwtService.sign(
-      {
-        sub: user.id,
-        type: 'refresh',
-      },
-      { expiresIn: '7d' }
-    );
 
     user.lastLoginAt = new Date();
     user.lastLoginIp = ip;
@@ -651,7 +661,7 @@ export class AuthService {
 
       if (existingDeviceToken) {
         existingDeviceToken.ipAddress = ip;
-        existingDeviceToken.jwtToken = refreshToken; // save refresh token here
+        existingDeviceToken.jwtToken = token; // save refresh token here
         existingDeviceToken.user = user;
         existingDeviceToken.user_id = user.id;
         await this.deviceTokenRepo.save(existingDeviceToken);
@@ -660,7 +670,7 @@ export class AuthService {
           user,
           user_id: user.id,
           deviceToken: device_token,
-          jwtToken: refreshToken, // save refresh token here
+          jwtToken: token, // save refresh token here
           ipAddress: ip,
           role: 'User',
         });
@@ -675,8 +685,7 @@ export class AuthService {
       status: 200,
       message: 'User logged in successfully.',
       data: {
-        token: refreshToken,  // refresh token
-        accessToken,          // access token
+        token,
         user: safeUser,
       },
     };
@@ -985,13 +994,15 @@ export class AuthService {
     let payload: any;
     try {
       payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: process.env.JWT_SECRET || 'wuMTXyB2YAMUSOZZ5WVygkezaufs3LPSsvhPXLKZCpVX6P0ro9VwtINsq7yb3P24',
       });
     } catch (err) {
+      console.error(token, 'Refresh token verification failed:', err);
       throw new UnauthorizedException('Refresh token invalid or expired');
     }
 
     if (payload.type !== 'refresh') {
+      console.error('Invalid token type:', payload.type);
       throw new UnauthorizedException('Invalid token type');
     }
 
@@ -1009,7 +1020,6 @@ export class AuthService {
       { sub: user.id, type: 'refresh' },
       { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }
     );
-
     // Optional: save hashed refreshToken in DB
 
     user.refreshToken = await bcrypt.hash(newRefreshToken, parseInt(process.env.BCRYPT_SALT_ROUNDS || '10'));

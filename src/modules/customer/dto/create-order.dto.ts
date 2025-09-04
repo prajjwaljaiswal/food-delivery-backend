@@ -28,5 +28,9 @@ export class CreateOrderDto {
 
   @IsNumber()
   @IsOptional()
+  addressId: number;
+
+  @IsNumber()
+  @IsOptional()
   discountAmount?: number; // optional front-end input
 }

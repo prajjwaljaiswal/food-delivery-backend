@@ -160,138 +160,146 @@ export class RestaurantController {
 
   /* -------------------------- Update Restaurant ------------------------ */
 
-  @Patch(':id')
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: 'logo', maxCount: 1 },
-        { name: 'bannerImages', maxCount: 5 },
-        { name: 'galleryImages', maxCount: 10 },
-        { name: 'foodSafetyCertificate', maxCount: 1 },
-        { name: 'taxIdCertificate', maxCount: 1 },
-        { name: 'businessLicense', maxCount: 1 },
-        { name: 'insuranceCertificate', maxCount: 1 },
-      ],
-      {
-        storage: diskStorage({
-          destination: './uploads/restaurants',
-          filename: (req, file, callback) => {
-            const uniqueSuffix =
-              Date.now() + '-' + Math.round(Math.random() * 1e9);
-            const ext = extname(file.originalname);
-            callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-          },
-        }),
-        fileFilter: (req, file, callback) => {
-          const allowedMimeTypes = [
-            'image/jpeg',
-            'image/jpg',
-            'image/png',
-            'image/avif',
-            'application/pdf',
-          ];
-          if (!allowedMimeTypes.includes(file.mimetype)) {
-            return callback(new Error('Only image or PDF files are allowed!'), false);
-          }
-          callback(null, true);
-        }
-        ,
-      },
-    ),
-  )
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: any,
-    @UploadedFiles()
-    files: {
-      logo?: Express.Multer.File[];
-      bannerImages?: Express.Multer.File[];
-      galleryImages?: Express.Multer.File[];
-      foodSafetyCertificate?: Express.Multer.File[];
-      taxIdCertificate?: Express.Multer.File[];
-      businessLicense?: Express.Multer.File[];
-      insuranceCertificate?: Express.Multer.File[];
-    },
-  ) {
-    // 0️⃣ Fix description
-    if (dto.description) {
-      if (Array.isArray(dto.description)) {
-        dto.description = dto.description
-          .filter(v => v && v.toString().trim() !== '')
-          .join(' ')
-          .trim();
-      } else {
-        dto.description = String(dto.description).trim();
-      }
-    }
+  // @Patch(':id')
+  // @UseInterceptors(
+  //   FileFieldsInterceptor(
+  //     [
+  //       { name: 'logo', maxCount: 1 },
+  //       { name: 'bannerImages', maxCount: 5 },
+  //       { name: 'galleryImages', maxCount: 10 },
+  //       { name: 'foodSafetyCertificate', maxCount: 1 },
+  //       { name: 'taxIdCertificate', maxCount: 1 },
+  //       { name: 'businessLicense', maxCount: 1 },
+  //       { name: 'insuranceCertificate', maxCount: 1 },
+  //     ],
+  //     {
+  //       storage: diskStorage({
+  //         destination: './uploads/restaurants',
+  //         filename: (req, file, callback) => {
+  //           const uniqueSuffix =
+  //             Date.now() + '-' + Math.round(Math.random() * 1e9);
+  //           const ext = extname(file.originalname);
+  //           callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+  //         },
+  //       }),
+  //       fileFilter: (req, file, callback) => {
+  //         const allowedMimeTypes = [
+  //           'image/jpeg',
+  //           'image/jpg',
+  //           'image/png',
+  //           'image/avif',
+  //           'application/pdf',
+  //         ];
+  //         if (!allowedMimeTypes.includes(file.mimetype)) {
+  //           return callback(new Error('Only image or PDF files are allowed!'), false);
+  //         }
+  //         callback(null, true);
+  //       }
+  //       ,
+  //     },
+  //   ),
+  // )
+  // async update(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body() dto: any,
+  //   @UploadedFiles()
+  //   files: {
+  //     logo?: Express.Multer.File[];
+  //     bannerImages?: Express.Multer.File[];
+  //     galleryImages?: Express.Multer.File[];
+  //     foodSafetyCertificate?: Express.Multer.File[];
+  //     taxIdCertificate?: Express.Multer.File[];
+  //     businessLicense?: Express.Multer.File[];
+  //     insuranceCertificate?: Express.Multer.File[];
+  //   },
+  // ) {
 
-    // 1️⃣ Parse weeklySchedule if it's a string
-    if (dto.weeklySchedule && typeof dto.weeklySchedule === 'string') {
-      try {
-        dto.weeklySchedule = JSON.parse(dto.weeklySchedule);
-      } catch (e) {
-        throw new BadRequestException('Invalid weeklySchedule JSON format');
-      }
-    }
+  //   if (dto.deletedImages && typeof dto.deletedImages === 'string') {
+  //     try {
+  //       dto.deletedImages = JSON.parse(dto.deletedImages);
+  //     } catch {
+  //       dto.deletedImages = {};
+  //     }
+  //   }
+  //   // 0️⃣ Fix description
+  //   if (dto.description) {
+  //     if (Array.isArray(dto.description)) {
+  //       dto.description = dto.description
+  //         .filter(v => v && v.toString().trim() !== '')
+  //         .join(' ')
+  //         .trim();
+  //     } else {
+  //       dto.description = String(dto.description).trim();
+  //     }
+  //   }
+
+  //   // 1️⃣ Parse weeklySchedule if it's a string
+  //   if (dto.weeklySchedule && typeof dto.weeklySchedule === 'string') {
+  //     try {
+  //       dto.weeklySchedule = JSON.parse(dto.weeklySchedule);
+  //     } catch (e) {
+  //       throw new BadRequestException('Invalid weeklySchedule JSON format');
+  //     }
+  //   }
 
 
-    // 2️⃣ Convert boolean fields from string to actual booleans
-    if (
-      dto.enableOnlineOrders !== undefined &&
-      typeof dto.enableOnlineOrders === 'string'
-    ) {
-      dto.enableOnlineOrders = dto.enableOnlineOrders === 'true';
-    }
-    if (
-      dto.enableTableBooking !== undefined &&
-      typeof dto.enableTableBooking === 'string'
-    ) {
-      dto.enableTableBooking = dto.enableTableBooking === 'true';
-    }
+  //   // 2️⃣ Convert boolean fields from string to actual booleans
+  //   if (
+  //     dto.enableOnlineOrders !== undefined &&
+  //     typeof dto.enableOnlineOrders === 'string'
+  //   ) {
+  //     dto.enableOnlineOrders = dto.enableOnlineOrders === 'true';
+  //   }
+  //   if (
+  //     dto.enableTableBooking !== undefined &&
+  //     typeof dto.enableTableBooking === 'string'
+  //   ) {
+  //     dto.enableTableBooking = dto.enableTableBooking === 'true';
+  //   }
 
-    // 3️⃣ Handle uploaded files
-    if (files.logo) {
-      dto.logo = `/uploads/restaurants/${files.logo[0].filename}`;
-    }
-    if (files.bannerImages) {
-      dto.bannerImages = files.bannerImages.map(
-        (file) => `/uploads/restaurants/${file.filename}`,
-      );
-    }
-    if (files.galleryImages) {
-      dto.galleryImages = files.galleryImages.map(
-        (file) => `/uploads/restaurants/${file.filename}`,
-      );
-    }
+  //   // 3️⃣ Handle uploaded files
+  //   if (files.logo) {
+  //     dto.logo = `/uploads/restaurants/${files.logo[0].filename}`;
+  //   }
+  //   if (files.bannerImages) {
+  //     dto.bannerImages = files.bannerImages.map(
+  //       (file) => `/uploads/restaurants/${file.filename}`,
+  //     );
+  //   }
+  //   if (files.galleryImages) {
+  //     dto.galleryImages = files.galleryImages.map(
+  //       (file) => `/uploads/restaurants/${file.filename}`,
+  //     );
+  //   }
 
-    /* ------------ New Certificates ------------- */
-    if (files.foodSafetyCertificate) {
-      dto.foodSafetyCertificate = `/uploads/restaurants/${files.foodSafetyCertificate[0].filename}`;
-    }
-    if (files.taxIdCertificate) {
-      dto.taxIdCertificate = `/uploads/restaurants/${files.taxIdCertificate[0].filename}`;
-    }
-    if (files.businessLicense) {
-      dto.businessLicense = `/uploads/restaurants/${files.businessLicense[0].filename}`;
-    }
-    if (files.insuranceCertificate) {
-      dto.insuranceCertificate = `/uploads/restaurants/${files.insuranceCertificate[0].filename}`;
-    }
-    /* ------------------------------------------- */
+  //   /* ------------ New Certificates ------------- */
+  //   if (files.foodSafetyCertificate) {
+  //     dto.foodSafetyCertificate = `/uploads/restaurants/${files.foodSafetyCertificate[0].filename}`;
+  //   }
+  //   if (files.taxIdCertificate) {
+  //     dto.taxIdCertificate = `/uploads/restaurants/${files.taxIdCertificate[0].filename}`;
+  //   }
+  //   if (files.businessLicense) {
+  //     dto.businessLicense = `/uploads/restaurants/${files.businessLicense[0].filename}`;
+  //   }
+  //   if (files.insuranceCertificate) {
+  //     dto.insuranceCertificate = `/uploads/restaurants/${files.insuranceCertificate[0].filename}`;
+  //   }
+  //   /* ------------------------------------------- */
 
-    // 4️⃣ Call service update method
-    return this.restaurantService.update(id, {
-      ...dto,
-      logo: files.logo?.[0] ? `/uploads/restaurants/${files.logo[0].filename}` : undefined,
-      bannerImages: files.bannerImages?.map(f => `/uploads/restaurants/${f.filename}`) || undefined,
-      galleryImages: files.galleryImages?.map(f => `/uploads/restaurants/${f.filename}`) || undefined,
-      foodSafetyCertificate: files.foodSafetyCertificate?.[0] ? `/uploads/restaurants/${files.foodSafetyCertificate[0].filename}` : undefined,
-      taxIdCertificate: files.taxIdCertificate?.[0] ? `/uploads/restaurants/${files.taxIdCertificate[0].filename}` : undefined,
-      businessLicense: files.businessLicense?.[0] ? `/uploads/restaurants/${files.businessLicense[0].filename}` : undefined,
-      insuranceCertificate: files.insuranceCertificate?.[0] ? `/uploads/restaurants/${files.insuranceCertificate[0].filename}` : undefined,
-    });
+  //   // 4️⃣ Call service update method
+  //   return this.restaurantService.update(id, {
+  //     ...dto,
+  //     logo: files.logo?.[0] ? `/uploads/restaurants/${files.logo[0].filename}` : undefined,
+  //     bannerImages: files.bannerImages?.map(f => `/uploads/restaurants/${f.filename}`) || undefined,
+  //     galleryImages: files.galleryImages?.map(f => `/uploads/restaurants/${f.filename}`) || undefined,
+  //     foodSafetyCertificate: files.foodSafetyCertificate?.[0] ? `/uploads/restaurants/${files.foodSafetyCertificate[0].filename}` : undefined,
+  //     taxIdCertificate: files.taxIdCertificate?.[0] ? `/uploads/restaurants/${files.taxIdCertificate[0].filename}` : undefined,
+  //     businessLicense: files.businessLicense?.[0] ? `/uploads/restaurants/${files.businessLicense[0].filename}` : undefined,
+  //     insuranceCertificate: files.insuranceCertificate?.[0] ? `/uploads/restaurants/${files.insuranceCertificate[0].filename}` : undefined,
+  //   });
 
-  }
+  // }
 
 
   /* -------------------------- Delete Restaurant ------------------------ */
