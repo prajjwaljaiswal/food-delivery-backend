@@ -582,34 +582,16 @@ export class AuthService {
     }
 
     // ✅ If user not verified — send OTP safely
+    // ✅ If user not verified — always send OTP
     if (!user.isOtpVerified) {
-      const recentOtp = await this.otpRepo.findOne({
-        where: {
-          email: user.email,
-          otpType: 'verify',
-          isUsed: false,
-          expiresAt: MoreThan(new Date()),
-        },
-        order: { id: 'DESC' },
-      });
-
-      if (recentOtp) {
-        const secondsLeft = Math.floor((recentOtp.expiresAt.getTime() - Date.now()) / 1000);
-        return {
-          success: false,
-          status: 403,
-          message: `User not verified. Please wait ${secondsLeft} seconds before requesting another OTP.`,
-          data: [],
-        };
-      }
-
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
       await this.otpRepo.save({
         email: user.email,
         channel: 'email',
         otpCode,
         otpType: 'verify',
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min validity
         user,
       });
 
@@ -635,10 +617,9 @@ export class AuthService {
       };
     }
 
+
     // ✅ All good — proceed with login
     const ip = req.ip;
-    console.log(user.role?.name, "role")
-    console.log(user.role?.id, "role id")
 
     // const ip = req.ip;
     const token = this.jwtService.sign({
