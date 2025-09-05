@@ -101,6 +101,7 @@ export class UsersService {
     }
     async createAddress(userId: number, dto: CreateAddressDto) {
         const user = await this.userRepo.findOne({ where: { id: userId } });
+        console.log(user ,"user");
         if (!user) {
             throw new NotFoundException(`User with ID ${userId} not found`);
         }

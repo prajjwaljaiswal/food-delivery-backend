@@ -363,7 +363,8 @@ export class AuthService {
             id: user.id,
             email: user.email,
             role: user.role?.slug,
-            isOtpVerified: user.isOtpVerified
+            isOtpVerified: user.isOtpVerified,
+            type: dto.otp_type === 'verify' ? 'registration' : 'password_reset',
           }
         }
       };
