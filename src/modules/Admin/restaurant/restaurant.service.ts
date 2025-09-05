@@ -196,134 +196,134 @@ export class RestaurantService {
   }
 
 
-  // async update(
-  //   id: number,
-  //   dto: UpdateRestaurantDto,
-  // ) {
-  //   // 1️⃣ Find existing restaurant
-  //   const restaurant = await this.restaurantRepo.findOne({ where: { id } });
-  //   if (!restaurant) {
-  //     return {
-  //       status: 404,
-  //       success: false,
-  //       message: 'Restaurant not found',
-  //       data: null,
-  //     };
-  //   }
+  async update(
+    id: number,
+    dto: UpdateRestaurantDto,
+  ) {
+    // 1️⃣ Find existing restaurant
+    const restaurant = await this.restaurantRepo.findOne({ where: { id } });
+    if (!restaurant) {
+      return {
+        status: 404,
+        success: false,
+        message: 'Restaurant not found',
+        data: null,
+      };
+    }
 
-  //   // 2️⃣ Check email duplication
-  //   if (dto.email) {
-  //     const existingEmail = await this.restaurantRepo.findOne({ where: { email: dto.email } });
-  //     if (existingEmail && existingEmail.id !== id) {
-  //       return {
-  //         status: 409,
-  //         success: false,
-  //         message: 'Another restaurant with this email already exists.',
-  //       };
-  //     }
-  //   }
+    // 2️⃣ Check email duplication
+    if (dto.email) {
+      const existingEmail = await this.restaurantRepo.findOne({ where: { email: dto.email } });
+      if (existingEmail && existingEmail.id !== id) {
+        return {
+          status: 409,
+          success: false,
+          message: 'Another restaurant with this email already exists.',
+        };
+      }
+    }
 
-  //   // 3️⃣ Check phone duplication
-  //   if (dto.phone) {
-  //     const existingPhone = await this.restaurantRepo.findOne({ where: { phone: dto.phone } });
-  //     if (existingPhone && existingPhone.id !== id) {
-  //       return {
-  //         status: 409,
-  //         success: false,
-  //         message: 'Another restaurant with this phone already exists.',
-  //       };
-  //     }
-  //   }
+    // 3️⃣ Check phone duplication
+    if (dto.phone) {
+      const existingPhone = await this.restaurantRepo.findOne({ where: { phone: dto.phone } });
+      if (existingPhone && existingPhone.id !== id) {
+        return {
+          status: 409,
+          success: false,
+          message: 'Another restaurant with this phone already exists.',
+        };
+      }
+    }
 
-  //   // Delete images from filesystem & DB if requested
-  //   // 4️⃣ Delete images from filesystem & DB if requested
-  //   if (dto.deletedImages && typeof dto.deletedImages === 'object') {
-  //     for (const [key, filesToDelete] of Object.entries(dto.deletedImages)) {
-  //       if (Array.isArray(filesToDelete) && filesToDelete.length > 0) {
-  //         filesToDelete.forEach((filePath) => {
-  //           const fullPath = path.join(process.cwd(), filePath);
-  //           if (fs.existsSync(fullPath)) {
-  //             fs.unlinkSync(fullPath);
-  //           }
-  //         });
+    // Delete images from filesystem & DB if requested
+    // 4️⃣ Delete images from filesystem & DB if requested
+    if (dto.deletedImages && typeof dto.deletedImages === 'object') {
+      for (const [key, filesToDelete] of Object.entries(dto.deletedImages)) {
+        if (Array.isArray(filesToDelete) && filesToDelete.length > 0) {
+          filesToDelete.forEach((filePath) => {
+            const fullPath = path.join(process.cwd(), filePath);
+            if (fs.existsSync(fullPath)) {
+              fs.unlinkSync(fullPath);
+            }
+          });
 
-  //         // Remove deleted images from DB
-  //         if (Array.isArray(restaurant[key])) {
-  //           restaurant[key] = restaurant[key].filter((img) => !filesToDelete.includes(img));
-  //         } else if (typeof restaurant[key] === 'string') {
-  //           if (filesToDelete.includes(restaurant[key])) {
-  //             restaurant[key] = null;
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  //   // 4️⃣ Update allowed fields
-  //   Object.assign(restaurant, dto);
+          // Remove deleted images from DB
+          if (Array.isArray(restaurant[key])) {
+            restaurant[key] = restaurant[key].filter((img) => !filesToDelete.includes(img));
+          } else if (typeof restaurant[key] === 'string') {
+            if (filesToDelete.includes(restaurant[key])) {
+              restaurant[key] = null;
+            }
+          }
+        }
+      }
+    }
+    // 4️⃣ Update allowed fields
+    Object.assign(restaurant, dto);
 
-  //   // 6️⃣ Merge or replace weeklySchedule
-  //   if (dto.weeklySchedule) {
-  //     restaurant.weeklySchedule = {
-  //       ...(restaurant.weeklySchedule || {}),
-  //       ...dto.weeklySchedule,
-  //     };
-  //   }
+    // 6️⃣ Merge or replace weeklySchedule
+    if (dto.weeklySchedule) {
+      restaurant.weeklySchedule = {
+        ...(restaurant.weeklySchedule || {}),
+        ...dto.weeklySchedule,
+      };
+    }
 
-  //   // 7️⃣ Boolean fields
-  //   restaurant.enableOnlineOrders = dto.enableOnlineOrders ?? restaurant.enableOnlineOrders ?? false;
-  //   restaurant.enableTableBooking = dto.enableTableBooking ?? restaurant.enableTableBooking ?? false;
+    // 7️⃣ Boolean fields
+    restaurant.enableOnlineOrders = dto.enableOnlineOrders ?? restaurant.enableOnlineOrders ?? false;
+    restaurant.enableTableBooking = dto.enableTableBooking ?? restaurant.enableTableBooking ?? false;
 
-  //   // 8️⃣ Replace images if new ones uploaded
-  //   if (dto.logo) restaurant.logo = dto.logo;
+    // 8️⃣ Replace images if new ones uploaded
+    if (dto.logo) restaurant.logo = dto.logo;
 
-  //   // 🔟 Save updated restaurant
-  //   await this.restaurantRepo.save(restaurant);
+    // 🔟 Save updated restaurant
+    await this.restaurantRepo.save(restaurant);
 
-  //   // 1️⃣1️⃣ Re-fetch updated restaurant without password
-  //   const updatedRestaurant = await this.restaurantRepo.findOne({
-  //     where: { id },
-  //     select: {
-  //       id: true,
-  //       name: true,
-  //       ownerName: true,
-  //       role: true,
-  //       address: true,
-  //       email: true,
-  //       phone: true,
-  //       secondaryPhone: true,
-  //       cuisine: true,
-  //       country: true,
-  //       state: true,
-  //       city: true,
-  //       pincode: true,
-  //       deliveryTime: true,
-  //       description: true,
-  //       enableOnlineOrders: true,
-  //       enableTableBooking: true,
-  //       is_verified: true,
-  //       logo: true,
-  //       galleryImages: true,
-  //       bannerImages: true,
-  //       foodSafetyCertificate: true,
-  //       taxIdCertificate: true,
-  //       businessLicense: true,
-  //       insuranceCertificate: true,
-  //       opening_time: true,
-  //       closing_time: true,
-  //       weeklySchedule: true,
-  //       is_active: true,
-  //       created_at: true,
-  //       updated_at: true,
-  //     },
-  //   });
+    // 1️⃣1️⃣ Re-fetch updated restaurant without password
+    const updatedRestaurant = await this.restaurantRepo.findOne({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        ownerName: true,
+        role: true,
+        address: true,
+        email: true,
+        phone: true,
+        secondaryPhone: true,
+        cuisine: true,
+        country: true,
+        state: true,
+        city: true,
+        pincode: true,
+        deliveryTime: true,
+        description: true,
+        enableOnlineOrders: true,
+        enableTableBooking: true,
+        is_verified: true,
+        logo: true,
+        galleryImages: true,
+        bannerImages: true,
+        foodSafetyCertificate: true,
+        taxIdCertificate: true,
+        businessLicense: true,
+        insuranceCertificate: true,
+        opening_time: true,
+        closing_time: true,
+        weeklySchedule: true,
+        is_active: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
 
-  //   return {
-  //     status: 200,
-  //     success: true,
-  //     message: 'Restaurant updated successfully',
-  //     data: updatedRestaurant,
-  //   };
-  // }
+    return {
+      status: 200,
+      success: true,
+      message: 'Restaurant updated successfully',
+      data: updatedRestaurant,
+    };
+  }
 
 
 
@@ -437,33 +437,37 @@ export class RestaurantService {
   //   return { status: 200, success: true, message: 'Restaurant updated successfully', data: updatedRestaurant };
   // }
 
+async remove(id: number) {
+  const restaurant = await this.restaurantRepo.findOne({ where: { id } });
 
-  async remove(id: number) {
-    const restaurant = await this.restaurantRepo.findOne({ where: { id } });
-
-    if (!restaurant) {
-      return {
-        status: 404,
-        success: false,
-        message: 'Restaurant not found',
-        data: null,
-      };
-    }
-
-    // 1️⃣ Delete dependent rows first
-    await this.categoryRepo.delete({ restaurantId: id });
-    await this.menuItemRepo.delete({ restaurant: { id } });
-    await this.orderRepo.delete({ restaurant: { id } });
-
-    // 2️⃣ Now remove the restaurant
-    await this.restaurantRepo.remove(restaurant);
-
+  if (!restaurant) {
     return {
-      status: 200,
-      success: true,
-      message: 'Restaurant deleted successfully',
+      status: 404,
+      success: false,
+      message: 'Restaurant not found',
       data: null,
     };
   }
+
+  // 1️⃣ Pehle menu items delete karo (kyunki wo category ko hold kar rahe hain)
+  await this.menuItemRepo.delete({ restaurant: { id } });
+
+  // 2️⃣ Ab categories delete karo
+  await this.categoryRepo.delete({ restaurantId: id });
+
+  // 3️⃣ Orders delete karo
+  await this.orderRepo.delete({ restaurant: { id } });
+
+  // 4️⃣ Ab restaurant safely delete ho jayega
+  await this.restaurantRepo.remove(restaurant);
+
+  return {
+    status: 200,
+    success: true,
+    message: 'Restaurant deleted successfully',
+    data: null,
+  };
+}
+
 
 }

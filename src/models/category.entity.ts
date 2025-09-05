@@ -35,9 +35,13 @@ export class Category {
   @Column({ default: true })
   isVisible: boolean;
 
+  // Category.entity.ts
+@OneToMany(() => MenuItem, menuItem => menuItem.category, {
+  cascade: true,
+  onDelete: 'CASCADE',
+})
+menuItems: MenuItem[];
 
-  @OneToMany(() => MenuItem, menuItem => menuItem.category)
-  menuItems: MenuItem[];
 
   @Column({ default: 0 })
   priority: number;

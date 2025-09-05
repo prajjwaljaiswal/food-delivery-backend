@@ -23,7 +23,6 @@ export class VerificationDocumentService {
         const document = this.documentRepo.create({
             ...dto,
             driver,
-            driverId,
         });
 
         return this.documentRepo.save(document);

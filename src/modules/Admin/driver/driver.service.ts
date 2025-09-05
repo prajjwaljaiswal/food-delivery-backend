@@ -152,7 +152,7 @@ export class DriverService {
         // 3️⃣ Verification document creation if provided
         let document: VerificationDocument | undefined;
         if (documentDto) {
-            document = this.documentRepo.create({ ...documentDto, driver, driverId: driver.id });
+            document = this.documentRepo.create({ ...documentDto, driver });
             document = await this.documentRepo.save(document);
         }
 
@@ -261,10 +261,13 @@ export class DriverService {
     }
 
     async findOne(id: number) {
+        console.log(id, "ididididididididididididididididididididididididi")
         const driver = await this.driverRepo.findOne({
             where: { id },
-            relations: ['vehicles', 'verificationDocuments'], // include vehicles & docs
+            relations: ['vehicles', 'verificationDocuments'],
         });
+
+        console.log(driver, "driverdriverdriverdriverdriverdriver")
 
         if (!driver) {
             return {
@@ -407,7 +410,7 @@ export class DriverService {
                 Object.assign(document, documentDto);
                 document = await this.documentRepo.save(document);
             } else {
-                document = this.documentRepo.create({ ...documentDto, driver, driverId: driver.id });
+                document = this.documentRepo.create({ ...documentDto, driver });
                 document = await this.documentRepo.save(document);
             }
         }

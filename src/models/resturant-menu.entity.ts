@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Restaurant } from './admin-restaurant.entity';
 import { Category } from './category.entity';
 
@@ -12,17 +12,16 @@ export enum AddOnEnum {
   SAUCE = 'Sauce',
   TOPPING = 'Topping',
 }
+
 export enum DietaryTagEnum {
   VEGAN = 'Vegan',
   VEGETARIAN = 'Vegetarian',
   B_VEG = 'B-Veg',       // eg: Butter-Vegetarian
   NON_VEG = 'Non-Veg',
   GLUTEN_FREE = 'Gluten-Free',
-  // you can keep adding more as needed
 }
 
-
-@Entity()
+@Entity('menu_item')
 export class MenuItem {
   @PrimaryGeneratedColumn()
   id: number;
@@ -42,11 +41,25 @@ export class MenuItem {
   @Column({ default: true })
   inStock: boolean;
 
-  @ManyToOne(() => Restaurant, restaurant => restaurant.menuItems)
+  // Relation with Restaurant
+  @ManyToOne(() => Restaurant, restaurant => restaurant.menuItems, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'restaurantId' })
   restaurant: Restaurant;
 
-  @ManyToOne(() => Category, category => category.menuItems)
+  @Column()
+  restaurantId: number;
+
+  // Relation with Category
+  @ManyToOne(() => Category, category => category.menuItems, {
+    onDelete: 'CASCADE', // ✅ fixes the FK error
+  })
+  @JoinColumn({ name: 'categoryId' })
   category: Category;
+
+  @Column()
+  categoryId: number;
 
   // JSON columns for MySQL / MariaDB
   @Column({ type: 'json', nullable: true })

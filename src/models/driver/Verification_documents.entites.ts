@@ -13,9 +13,6 @@ export class VerificationDocument {
   @JoinColumn({ name: 'driverId' })
   driver: Driver;
 
-  @IsOptional()
-  @Column()
-  driverId?: number;
 
   @Column({ nullable: true })
   drivingLicense?: string;

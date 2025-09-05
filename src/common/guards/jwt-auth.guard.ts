@@ -13,25 +13,22 @@ import { RoleEnum } from '../enums/roles.enum';
 // JWT Auth Guard: Checks if JWT token is valid
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  handleRequest(err, type, info, context) {
-    console.log('→ JWT Auth Guard invoked', err, type);
+  handleRequest(err, user, info, context) {
+    // console.log('→ JWT Auth Guard invoked', err, user);
     const req = context.switchToHttp().getRequest();
 
-    console.log('→ Request User:', req);
-
     const token = req.headers['authorization']?.split(' ')[1];
-    console.log('→ Extracted Token:', token);
     if (!token) {
       console.log('⛔ No token provided');
       throw new UnauthorizedException('No token provided');
     }
 
-    if (err || !type) {
-      console.log('⛔ Invalid token or user not found', err, type);
+    if (err || !user) {
+      console.log('⛔ Invalid token or user not found', err, user);
       throw err || new UnauthorizedException('Unauthorized');
     }
 
-    return type;
+    return user;
   }
 }
 

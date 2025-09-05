@@ -35,9 +35,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    console.log(payload, "payloadpayloadpayloadpayload")
     this.logger.log(`Validating JWT payload for ${payload.type}: ${payload.sub}`);
-
+    
     // Validate required fields
     if (!payload.sub || !payload.role_id || !payload.type) {
       this.logger.error('Invalid JWT payload structure');
@@ -48,9 +47,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       id: payload.sub,
       userId: payload.sub, // For backward compatibility
-      role_id: payload.role_id ?? null,
+      role_id: payload.role_id,
       type: payload.type,
-      email: payload.email ?? null,
+      email: payload.email,
     };
   }
 }

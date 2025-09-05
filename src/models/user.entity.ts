@@ -20,7 +20,7 @@ export class UserEntity {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 
- @ManyToOne(() => RoleEntity, (role) => role.users, {
+  @ManyToOne(() => RoleEntity, (role) => role.users, {
     nullable: true,
     onDelete: 'CASCADE',
     eager: true,
@@ -65,10 +65,10 @@ export class UserEntity {
   @Column({ name: 'zip_code', type: 'varchar', nullable: true })
   zipCode?: string;
 
-  
 
-@Column({ type: 'text', nullable: true })
-refreshToken?: string;
+
+  @Column({ type: 'text', nullable: true })
+  refreshToken?: string;
 
 
   @Column({ type: 'varchar' })
