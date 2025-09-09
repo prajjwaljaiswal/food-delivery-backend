@@ -48,7 +48,6 @@ export class RoleGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user as { id: number | string; role_id: RoleEnum };
-
     // ✅ If no roles are specified, deny by default
     if (!requiredRoles || requiredRoles.length === 0) {
       console.log('⛔ No roles specified, denying access');

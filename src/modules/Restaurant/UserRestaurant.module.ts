@@ -10,10 +10,11 @@ import { JwtUtil } from 'src/common/utils/jwt.util';
 import { RestaurantService } from './UserRestaurant.service';
 import { RestaurantController } from './UserRestaurant.controller';
 import { MenuItem } from 'src/models/resturant-menu.entity';
+import { Category } from 'src/models/category.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Restaurant, DeviceToken, UserEntity, Otp, RoleEntity,MenuItem]),
+    TypeOrmModule.forFeature([Restaurant, DeviceToken, UserEntity, Otp, RoleEntity, MenuItem, Category]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'wuMTXyB2YAMUSOZZ5WVygkezaufs3LPSsvhPXLKZCpVX6P0ro9VwtINsq7yb3P24',
       signOptions: { expiresIn: '7d' },

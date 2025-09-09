@@ -13,7 +13,7 @@ async function bootstrap() {
   // ✅ CORS sabse pehle enable karo
   // process.env.FRONTEND_URL ||
 
-  // const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'  
+  // const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
 
   // app.enableCors({
   //   origin: frontendUrl,
@@ -47,19 +47,23 @@ async function bootstrap() {
   app.use(express.urlencoded({ extended: true }));
 
   // ✅ Global ValidationPipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    exceptionFactory: (errors) => {
-      const messages = errors.map(err => Object.values(err.constraints || {})).flat();
-      return new BadRequestException({
-        status: false,
-        code: 400,
-        message: messages,
-        data: null
-      });
-    }
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      exceptionFactory: (errors) => {
+        const messages = errors
+          .map((err) => Object.values(err.constraints || {}))
+          .flat();
+        return new BadRequestException({
+          status: false,
+          code: 400,
+          message: messages,
+          data: null,
+        });
+      },
+    }),
+  );
 
   // ✅ Swagger setup
   const config = new DocumentBuilder()

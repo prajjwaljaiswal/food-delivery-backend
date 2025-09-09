@@ -540,7 +540,6 @@ export class AuthService {
 
   async login(dto: LoginDto, req: Request): Promise<LoginSuccess | LoginFail> {
     const { username, password, device_token } = dto;
-    console.log('→ Login attempt', { username, password });
     let user: UserEntity | null = null;
 
     // ✅ Check email or phone format

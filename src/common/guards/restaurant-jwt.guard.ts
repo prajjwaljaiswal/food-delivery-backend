@@ -18,6 +18,8 @@ export class RestaurantJwtGuard extends AuthGuard('jwt') {
   handleRequest(err, user, info, context) {
     const req = context.switchToHttp().getRequest();
 
+    console.log('user', user, req.user);
+
     if (err || !user) {
       console.log('⛔ Restaurant not authenticated');
       throw err || new UnauthorizedException('Restaurant authentication required');
