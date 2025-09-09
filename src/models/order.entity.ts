@@ -56,6 +56,8 @@ export class Order {
 
   @Column({ nullable: true })
   addressId?: number;
+  // @ManyToOne(() => AddressEntity, (address) => address.orders)
+  // address: AddressEntity;
 
   /* ---------------- Timestamps ---------------- */
   @CreateDateColumn()

@@ -14,13 +14,14 @@ import * as path from 'path';
 @Injectable()
 export class RestaurantService {
   constructor(
-
     @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
-    @InjectRepository(MenuItem) private readonly menuItemRepo: Repository<MenuItem>,
-    @InjectRepository(Category) private readonly categoryRepo: Repository<Category>,
+    @InjectRepository(MenuItem)
+    private readonly menuItemRepo: Repository<MenuItem>,
+    @InjectRepository(Category)
+    private readonly categoryRepo: Repository<Category>,
     @InjectRepository(Restaurant)
     private restaurantRepo: Repository<Restaurant>,
-  ) { }
+  ) {}
   async create(dto: CreateRestaurantDto) {
     // 1️⃣ Duplicate check
     const existingRestaurant = await this.restaurantRepo.findOne({
@@ -42,9 +43,9 @@ export class RestaurantService {
       ...dto,
       password: hashedPassword,
       role: { id: 2 }, // default restaurant role
-      logo: dto.logo || undefined,                 // single logo image
-      galleryImages: dto.galleryImages || [],      // multiple gallery images
-      bannerImages: dto.bannerImages || [],        // multiple banner images
+      logo: dto.logo || undefined, // single logo image
+      galleryImages: dto.galleryImages || [], // multiple gallery images
+      bannerImages: dto.bannerImages || [], // multiple banner images
       foodSafetyCertificate: dto.foodSafetyCertificate || undefined,
       taxIdCertificate: dto.taxIdCertificate || undefined,
       businessLicense: dto.businessLicense || undefined,
@@ -138,45 +139,33 @@ export class RestaurantService {
   }
 
   async findOne(id: number) {
-    const restaurant = await this.restaurantRepo.findOne({
-      where: { id },
-      relations: ['menuItems', 'orders'],
-      select: {
-        id: true,
-        name: true,
-        ownerName: true,
-        role: true,
-        address: true,
-        email: true,
-        phone: true,
-        secondaryPhone: true,
-        cuisine: true,
-        country: true,
-        state: true,
+    const userFields = [
+      'user.id',
+      'user.firstName',
+      'user.lastName',
+      'user.email',
+      'user.phone',
+      'user.country',
+      'user.state',
+      'user.city',
+      'user.pincode',
+      'user.zipCode',
+      'user.isVerified',
+      'user.created_at',
+      'user.updated_at',
+      
+    ];
 
-        city: true,
-        pincode: true,
-        deliveryTime: true,
-        description: true,
-        enableOnlineOrders: true,
-        insuranceCertificate: true,
-        foodSafetyCertificate: true,
-        businessLicense: true,
-        taxIdCertificate: true,
-        enableTableBooking: true,
-        is_verified: true,
-        logo: true,
-        weeklySchedule: true,  // ✅ included
-        galleryImages: true,
-        bannerImages: true,
-        orders: true,
-        opening_time: true,
-        closing_time: true,
-        is_active: true,
-        created_at: true,
-        updated_at: true,
-      },
-    });
+    const queryBuilder = this.restaurantRepo
+      .createQueryBuilder('restaurant')
+      .leftJoinAndSelect('restaurant.menuItems', 'menuItems')
+      .leftJoinAndSelect('restaurant.orders', 'orders')
+      .leftJoinAndSelect('orders.MenuItem', 'orderItems')
+      // .leftJoin('orders.user', 'user') // not select whole user
+      // .addSelect(userFields)
+      .where('restaurant.id = :id', { id });
+
+    const restaurant = await queryBuilder.getOne();
 
     if (!restaurant) {
       return {
@@ -195,11 +184,7 @@ export class RestaurantService {
     };
   }
 
-
-  async update(
-    id: number,
-    dto: UpdateRestaurantDto,
-  ) {
+  async update(id: number, dto: UpdateRestaurantDto) {
     // 1️⃣ Find existing restaurant
     const restaurant = await this.restaurantRepo.findOne({ where: { id } });
     if (!restaurant) {
@@ -213,7 +198,9 @@ export class RestaurantService {
 
     // 2️⃣ Check email duplication
     if (dto.email) {
-      const existingEmail = await this.restaurantRepo.findOne({ where: { email: dto.email } });
+      const existingEmail = await this.restaurantRepo.findOne({
+        where: { email: dto.email },
+      });
       if (existingEmail && existingEmail.id !== id) {
         return {
           status: 409,
@@ -225,7 +212,9 @@ export class RestaurantService {
 
     // 3️⃣ Check phone duplication
     if (dto.phone) {
-      const existingPhone = await this.restaurantRepo.findOne({ where: { phone: dto.phone } });
+      const existingPhone = await this.restaurantRepo.findOne({
+        where: { phone: dto.phone },
+      });
       if (existingPhone && existingPhone.id !== id) {
         return {
           status: 409,
@@ -249,7 +238,9 @@ export class RestaurantService {
 
           // Remove deleted images from DB
           if (Array.isArray(restaurant[key])) {
-            restaurant[key] = restaurant[key].filter((img) => !filesToDelete.includes(img));
+            restaurant[key] = restaurant[key].filter(
+              (img) => !filesToDelete.includes(img),
+            );
           } else if (typeof restaurant[key] === 'string') {
             if (filesToDelete.includes(restaurant[key])) {
               restaurant[key] = null;
@@ -270,8 +261,10 @@ export class RestaurantService {
     }
 
     // 7️⃣ Boolean fields
-    restaurant.enableOnlineOrders = dto.enableOnlineOrders ?? restaurant.enableOnlineOrders ?? false;
-    restaurant.enableTableBooking = dto.enableTableBooking ?? restaurant.enableTableBooking ?? false;
+    restaurant.enableOnlineOrders =
+      dto.enableOnlineOrders ?? restaurant.enableOnlineOrders ?? false;
+    restaurant.enableTableBooking =
+      dto.enableTableBooking ?? restaurant.enableTableBooking ?? false;
 
     // 8️⃣ Replace images if new ones uploaded
     if (dto.logo) restaurant.logo = dto.logo;
@@ -324,8 +317,6 @@ export class RestaurantService {
       data: updatedRestaurant,
     };
   }
-
-
 
   // async update(id: number, dto: UpdateRestaurantDto) {
   //   const restaurant = await this.restaurantRepo.findOne({ where: { id } });
@@ -437,37 +428,35 @@ export class RestaurantService {
   //   return { status: 200, success: true, message: 'Restaurant updated successfully', data: updatedRestaurant };
   // }
 
-async remove(id: number) {
-  const restaurant = await this.restaurantRepo.findOne({ where: { id } });
+  async remove(id: number) {
+    const restaurant = await this.restaurantRepo.findOne({ where: { id } });
 
-  if (!restaurant) {
+    if (!restaurant) {
+      return {
+        status: 404,
+        success: false,
+        message: 'Restaurant not found',
+        data: null,
+      };
+    }
+
+    // 1️⃣ Pehle menu items delete karo (kyunki wo category ko hold kar rahe hain)
+    await this.menuItemRepo.delete({ restaurant: { id } });
+
+    // 2️⃣ Ab categories delete karo
+    await this.categoryRepo.delete({ restaurantId: id });
+
+    // 3️⃣ Orders delete karo
+    await this.orderRepo.delete({ restaurant: { id } });
+
+    // 4️⃣ Ab restaurant safely delete ho jayega
+    await this.restaurantRepo.remove(restaurant);
+
     return {
-      status: 404,
-      success: false,
-      message: 'Restaurant not found',
+      status: 200,
+      success: true,
+      message: 'Restaurant deleted successfully',
       data: null,
     };
   }
-
-  // 1️⃣ Pehle menu items delete karo (kyunki wo category ko hold kar rahe hain)
-  await this.menuItemRepo.delete({ restaurant: { id } });
-
-  // 2️⃣ Ab categories delete karo
-  await this.categoryRepo.delete({ restaurantId: id });
-
-  // 3️⃣ Orders delete karo
-  await this.orderRepo.delete({ restaurant: { id } });
-
-  // 4️⃣ Ab restaurant safely delete ho jayega
-  await this.restaurantRepo.remove(restaurant);
-
-  return {
-    status: 200,
-    success: true,
-    message: 'Restaurant deleted successfully',
-    data: null,
-  };
-}
-
-
 }
