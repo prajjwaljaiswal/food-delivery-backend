@@ -140,7 +140,7 @@ export class RestaurantService {
   async findOne(id: number) {
     const restaurant = await this.restaurantRepo.findOne({
       where: { id },
-      relations: ['menuItems'], // ✅ include menu items
+      relations: ['menuItems', 'orders'],
       select: {
         id: true,
         name: true,
@@ -169,7 +169,7 @@ export class RestaurantService {
         weeklySchedule: true,  // ✅ included
         galleryImages: true,
         bannerImages: true,
-
+        orders: true,
         opening_time: true,
         closing_time: true,
         is_active: true,
