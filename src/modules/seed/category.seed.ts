@@ -8,19 +8,54 @@ export const seedCategories = async (dataSource: DataSource) => {
     const restaurantRepo = dataSource.getRepository(Restaurant);
 
     // ✅ List of restaurant IDs
-    const restaurantIds = [1,1,1,1];
+    const restaurantIds = [1, 1, 1, 1];
 
     const categoriesTemplate: Partial<Category>[] = [
-      { name: 'Starters', description: 'Tasty starters', type: 'starter', priority: 1, tags: ['starter'], slug: 'starters', isActive: true, isVisible: true },
-      { name: 'Main Course', description: 'Delicious main dishes', type: 'main', priority: 2, tags: ['main'], slug: 'main-course', isActive: true, isVisible: true },
-      { name: 'Desserts', description: 'Sweet desserts', type: 'dessert', priority: 3, tags: ['dessert'], slug: 'desserts', isActive: true, isVisible: true },
-      { name: 'Drinks', description: 'Refreshing beverages', type: 'drink', priority: 4, tags: ['drink'], slug: 'drinks', isActive: true, isVisible: true },
+      {
+        name: 'Starters',
+        description: 'Tasty starters',
+        type: 'starter',
+        priority: 1,
+        tags: ['starter'],
+        slug: 'starters',
+        isActive: true,
+        isVisible: true,
+      },
+      {
+        name: 'Main Course',
+        description: 'Delicious main dishes',
+        type: 'main',
+        priority: 2,
+        tags: ['main'],
+        slug: 'main-course',
+        isActive: true,
+        isVisible: true,
+      },
+      {
+        name: 'Desserts',
+        description: 'Sweet desserts',
+        type: 'dessert',
+        priority: 3,
+        tags: ['dessert'],
+        slug: 'desserts',
+        isActive: true,
+        isVisible: true,
+      },
+      {
+        name: 'Drinks',
+        description: 'Refreshing beverages',
+        type: 'drink',
+        priority: 4,
+        tags: ['drink'],
+        slug: 'drinks',
+        isActive: true,
+        isVisible: true,
+      },
     ];
 
     for (const id of restaurantIds) {
       const restaurant = await restaurantRepo.findOne({ where: { id } });
       if (!restaurant) {
-        
         continue;
       }
 
@@ -36,9 +71,13 @@ export const seedCategories = async (dataSource: DataSource) => {
             restaurantId: restaurant.id,
           });
           await categoryRepo.save(category);
-          console.log(`Category "${category.name}" seeded for restaurant ID ${restaurant.id}`);
+          console.log(
+            `Category "${category.name}" seeded for restaurant ID ${restaurant.id}`,
+          );
         } else {
-          console.log(`Category "${catTemplate.name}" already exists for restaurant ID ${restaurant.id}, skipping...`);
+          console.log(
+            `Category "${catTemplate.name}" already exists for restaurant ID ${restaurant.id}, skipping...`,
+          );
         }
       }
     }

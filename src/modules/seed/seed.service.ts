@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { RoleEntity } from 'src/models'; import { seedCategories } from './category.seed';
-
+import { RoleEntity } from 'src/models';
+import { seedCategories } from './category.seed';
 
 @Injectable()
 export class SeedService {
@@ -11,7 +11,7 @@ export class SeedService {
 
     @InjectRepository(RoleEntity)
     private roleRepository: Repository<RoleEntity>,
-  ) { }
+  ) {}
 
   async seedRoles() {
     const count = await this.roleRepository.count();

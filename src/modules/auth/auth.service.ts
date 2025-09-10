@@ -2,10 +2,10 @@ import {
   Injectable,
   BadRequestException,
   InternalServerErrorException,
-  NotFoundException, Logger
+  Logger,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, LessThanOrEqual, MoreThan, Repository } from 'typeorm';
+import { DataSource, MoreThan, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
@@ -22,8 +22,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResendOtpDto } from './dto/Resendotp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { RefreshTokenDto } from './dto/RefreshTokenDto.dto';
-import { use } from 'passport';
+
 type LoginSuccess = {
   success: true;
   status: 200;
@@ -58,8 +57,7 @@ export class AuthService {
     private readonly otpRepo: Repository<Otp>,
 
     private readonly jwtService: JwtService,
-  ) { }
-
+  ) {}
 
   private generateOtpCode(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -93,14 +91,10 @@ export class AuthService {
         deviceToken,
         ipAddress: ip,
         jwtToken: jwt,
-        role
+        role,
       });
     }
   }
-
-  /* -------------------------- Register Logic ------------------------ */
-
-
 
   async register(dto: RegisterDto) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -119,27 +113,25 @@ export class AuthService {
           status: false,
           code: 400,
           message: 'Invalid role ID provided.',
-          data: null
+          data: null,
         };
       }
 
       // 🔍 Check if user already exists
       const existingUser = await userRepo.findOne({
-        where: [
-          { email: dto.email },
-          { phone: dto.phone } // ✅ Check phone too
-        ]
+        where: [{ email: dto.email }, { phone: dto.phone }],
       });
 
       if (existingUser) {
         // ✅ If user is already verified, stop here
         if (existingUser.isOtpVerified) {
-          const conflictField = existingUser.email === dto.email ? 'Email' : 'Phone number';
+          const conflictField =
+            existingUser.email === dto.email ? 'Email' : 'Phone number';
           return {
             status: false,
             code: 400,
             message: `${conflictField} already registered and verified.`,
-            data: null
+            data: null,
           };
         }
 
@@ -149,25 +141,27 @@ export class AuthService {
             email: existingUser.email,
             otpType: 'verify',
             isUsed: false,
-            expiresAt: MoreThan(new Date())
+            expiresAt: MoreThan(new Date()),
           },
-          order: { id: 'DESC' }
+          order: { id: 'DESC' },
         });
 
         if (recentOtp) {
-          const secondsLeft = Math.floor((recentOtp.expiresAt.getTime() - Date.now()) / 1000);
+          const secondsLeft = Math.floor(
+            (recentOtp.expiresAt.getTime() - Date.now()) / 1000,
+          );
           return {
             status: false,
             code: 429,
             message: `Please wait ${secondsLeft} seconds before requesting another OTP.`,
-            data: null
+            data: null,
           };
         }
 
         // ✅ Expire old OTPs
         await otpRepo.update(
           { email: existingUser.email, otpType: 'verify', isUsed: false },
-          { isUsed: true }
+          { isUsed: true },
         );
 
         // 🔁 Resend OTP
@@ -191,20 +185,25 @@ export class AuthService {
             data: { otp: resendOtpCode },
           });
         } catch (emailErr) {
-          this.logger.error('Failed to send verification email', emailErr.stack || emailErr);
+          this.logger.error(
+            'Failed to send verification email',
+            emailErr.stack || emailErr,
+          );
         }
 
         return {
           status: true,
           code: 200,
           message: 'OTP resent to your email.',
-          data: { email: existingUser.email }
+          data: { email: existingUser.email },
         };
       }
 
-
       // 🆕 Create new user
-      const hashedPassword = await bcrypt.hash(dto.password, parseInt(process.env.BCRYPT_SALT_ROUNDS || '10'));
+      const hashedPassword = await bcrypt.hash(
+        dto.password,
+        parseInt(process.env.BCRYPT_SALT_ROUNDS || '10'),
+      );
       const newUser = userRepo.create({
         ...dto,
         password: hashedPassword,
@@ -233,16 +232,18 @@ export class AuthService {
           data: { otp: otpCode },
         });
       } catch (emailErr) {
-        this.logger.error('Failed to send verification email', emailErr.stack || emailErr);
+        this.logger.error(
+          'Failed to send verification email',
+          emailErr.stack || emailErr,
+        );
       }
 
       return {
         status: true,
         code: 201,
         message: 'OTP sent to your email.',
-        data: { id: newUser.id, email: newUser.email }
+        data: { id: newUser.id, email: newUser.email },
       };
-
     } catch (err) {
       await queryRunner.rollbackTransaction();
       this.logger.error('Unexpected registration error', err.stack || err);
@@ -250,13 +251,12 @@ export class AuthService {
         status: false,
         code: 500,
         message: 'Something went wrong. Please try again later.',
-        data: null
+        data: null,
       };
     } finally {
       await queryRunner.release();
     }
   }
-
 
   /* -------------------------- VerifyOtp Logic ------------------------ */
   async verifyOtp(dto: VerifyOtpDto, req: Request) {
@@ -279,7 +279,7 @@ export class AuthService {
           status: false,
           code: 404,
           message: 'User not found.',
-          data: null
+          data: null,
         };
       }
 
@@ -291,13 +291,13 @@ export class AuthService {
         },
         order: { id: 'DESC' },
       });
-      console.log(otp, "otp")
+      console.log(otp, 'otp');
       if (!otp) {
         return {
           status: false,
           code: 400,
           message: 'Invalid OTP.',
-          data: null
+          data: null,
         };
       }
 
@@ -306,7 +306,7 @@ export class AuthService {
           status: false,
           code: 400,
           message: 'OTP expired.',
-          data: null
+          data: null,
         };
       }
 
@@ -315,7 +315,7 @@ export class AuthService {
           status: false,
           code: 400,
           message: 'OTP already used.',
-          data: null
+          data: null,
         };
       }
 
@@ -333,7 +333,12 @@ export class AuthService {
       });
 
       // ✅ Verify user if needed
-      if (dto.otp_type === 'verify' || dto.otp_type === 'forgot_password' || dto.otp_type === 'restaurant_forgot_password' || dto.otp_type === 'driver_forgot_password') {
+      if (
+        dto.otp_type === 'verify' ||
+        dto.otp_type === 'forgot_password' ||
+        dto.otp_type === 'restaurant_forgot_password' ||
+        dto.otp_type === 'driver_forgot_password'
+      ) {
         user.isOtpVerified = true;
         await userRepo.save(user);
       }
@@ -365,10 +370,9 @@ export class AuthService {
             role: user.role?.slug,
             isOtpVerified: user.isOtpVerified,
             type: dto.otp_type === 'verify' ? 'registration' : 'password_reset',
-          }
-        }
+          },
+        },
       };
-
     } catch (err) {
       await queryRunner.rollbackTransaction();
 
@@ -378,13 +382,12 @@ export class AuthService {
         status: false,
         code: 500,
         message: 'Something went wrong. Please try again later.',
-        data: null
+        data: null,
       };
     } finally {
       await queryRunner.release();
     }
   }
-
 
   // /* -------------------------- Login Logic ------------------------ */
   // async login(dto: LoginDto, req: Request) {
@@ -535,7 +538,6 @@ export class AuthService {
   //   };
   // }
 
-
   /* -------------------------- Login Logic ------------------------ */
 
   async login(dto: LoginDto, req: Request): Promise<LoginSuccess | LoginFail> {
@@ -553,7 +555,7 @@ export class AuthService {
         where: { phone: username },
         relations: { role: true },
       });
-      console.log(user, "user 2")
+      console.log(user, 'user 2');
     } else {
       return {
         success: false,
@@ -604,7 +606,10 @@ export class AuthService {
         });
       } catch (err) {
         emailSent = false;
-        this.logger.error('Failed to send verification email', err.stack || err);
+        this.logger.error(
+          'Failed to send verification email',
+          err.stack || err,
+        );
       }
 
       return {
@@ -617,7 +622,6 @@ export class AuthService {
       };
     }
 
-
     // ✅ All good — proceed with login
     const ip = req.ip;
 
@@ -628,7 +632,6 @@ export class AuthService {
       type: 'user',
       email: user.email,
     });
-
 
     user.lastLoginAt = new Date();
     user.lastLoginIp = ip;
@@ -672,7 +675,6 @@ export class AuthService {
     };
   }
 
-
   /* -------------------------- ForgotPassword OTP Logic ------------------------ */
   async sendForgotPasswordOtp(dto: ForgotPasswordDto) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -701,7 +703,9 @@ export class AuthService {
       });
 
       if (recentOtp) {
-        const secondsLeft = Math.floor((recentOtp.expiresAt.getTime() - Date.now()) / 1000);
+        const secondsLeft = Math.floor(
+          (recentOtp.expiresAt.getTime() - Date.now()) / 1000,
+        );
         return {
           success: false,
           message: `Please wait ${secondsLeft} seconds before requesting another OTP.`,
@@ -715,7 +719,7 @@ export class AuthService {
           otpType: 'forgot_password',
           isUsed: false,
         },
-        { isUsed: true }
+        { isUsed: true },
       );
 
       // 🔐 Generate new OTP
@@ -744,7 +748,10 @@ export class AuthService {
         });
       } catch (emailErr) {
         emailSent = false;
-        console.error('[ForgotPassword] Failed to send email:', emailErr?.message);
+        console.error(
+          '[ForgotPassword] Failed to send email:',
+          emailErr?.message,
+        );
       }
 
       return {
@@ -758,16 +765,16 @@ export class AuthService {
           emailSent,
         },
       };
-
     } catch (error) {
       await queryRunner.rollbackTransaction();
       console.error('❌ Forgot password error:', error);
-      throw new InternalServerErrorException('Failed to process request. Please try again later.');
+      throw new InternalServerErrorException(
+        'Failed to process request. Please try again later.',
+      );
     } finally {
       await queryRunner.release();
     }
   }
-
 
   async resendOtp(dto: ResendOtpDto) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -778,7 +785,9 @@ export class AuthService {
       const userRepo = queryRunner.manager.getRepository(UserEntity);
       const otpRepo = queryRunner.manager.getRepository(Otp);
 
-      const user = await userRepo.findOneOrFail({ where: { email: dto.email } });
+      const user = await userRepo.findOneOrFail({
+        where: { email: dto.email },
+      });
 
       // ✅ 1 min ke andar agar koi OTP request hui hai toh error return karo
       const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
@@ -792,7 +801,8 @@ export class AuthService {
       });
 
       if (recentOtp) {
-        const secondsLeft = 60 - Math.floor((Date.now() - recentOtp.createdAt.getTime()) / 1000);
+        const secondsLeft =
+          60 - Math.floor((Date.now() - recentOtp.createdAt.getTime()) / 1000);
         return {
           success: false,
           message: `Please wait ${secondsLeft} seconds before requesting another OTP.`,
@@ -802,7 +812,7 @@ export class AuthService {
       // ✅ Purane OTP invalidate karo
       await otpRepo.update(
         { email: dto.email, otpType: dto.otp_type, isUsed: false },
-        { isUsed: true }
+        { isUsed: true },
       );
 
       // ✅ Naya OTP generate karo
@@ -825,7 +835,8 @@ export class AuthService {
       try {
         await this.emailService.sendTemplateNotification({
           user,
-          template: dto.otp_type === 'verify' ? 'welcome-email' : 'forgot-password',
+          template:
+            dto.otp_type === 'verify' ? 'welcome-email' : 'forgot-password',
           data: { otp: otpCode },
         });
       } catch (emailErr) {
@@ -840,7 +851,6 @@ export class AuthService {
           : 'OTP generated but email sending failed. Contact support.',
         data: { email: user.email, otpType: dto.otp_type, emailSent },
       };
-
     } catch (err) {
       await queryRunner.rollbackTransaction();
       return {
@@ -852,8 +862,6 @@ export class AuthService {
       await queryRunner.release();
     }
   }
-
-
 
   /* -------------------------- Logout Logic ------------------------ */
   async logout(req: Request, res: ExpressResponse) {
@@ -882,31 +890,29 @@ export class AuthService {
       expires: new Date(0),
     });
 
-    return res.status(200).json({ status: true, message: 'User logged out successfully', data: [] });
+    return res
+      .status(200)
+      .json({
+        status: true,
+        message: 'User logged out successfully',
+        data: [],
+      });
   }
-
 
   /* -------------------------- Reset Password ------------------------ */
 
   async resetPassword(dto: ResetPasswordDto, req: Request) {
-
     try {
-
       const jwtUser = req.user as any;
 
-
       const existingUser = await this.userRepo.findOne({
-
         where: { id: jwtUser.id },
 
         select: ['id', 'email'], // email bhi send kar sakte ho response me
-
       });
 
       if (!existingUser) {
-
         return {
-
           status: 404,
 
           success: false,
@@ -914,26 +920,18 @@ export class AuthService {
           message: 'User not found.',
 
           data: {},
-
         };
-
       }
-
 
       const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-
       await this.userRepo.update(jwtUser.id, {
-
         password: hashedPassword,
 
         isOtpVerified: true,
-
       });
 
-
       return {
-
         status: 200,
 
         success: true,
@@ -941,22 +939,15 @@ export class AuthService {
         message: 'Password reset successfully.',
 
         data: {
-
           userId: jwtUser.id,
 
           email: existingUser.email,
 
           isOtpVerified: true,
-
         },
-
       };
-
     } catch (error) {
-
-
       return {
-
         status: 500,
 
         success: false,
@@ -964,18 +955,17 @@ export class AuthService {
         message: 'Something went wrong while resetting password.',
 
         error: error.message,
-
       };
-
     }
-
   }
 
   async refreshToken(token: string) {
     let payload: any;
     try {
       payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET || 'wuMTXyB2YAMUSOZZ5WVygkezaufs3LPSsvhPXLKZCpVX6P0ro9VwtINsq7yb3P24',
+        secret:
+          process.env.JWT_SECRET ||
+          'wuMTXyB2YAMUSOZZ5WVygkezaufs3LPSsvhPXLKZCpVX6P0ro9VwtINsq7yb3P24',
       });
     } catch (err) {
       console.error(token, 'Refresh token verification failed:', err);
@@ -993,23 +983,23 @@ export class AuthService {
     // Generate new tokens
     const newAccessToken = this.jwtService.sign(
       { sub: user.id, role_id: user.role?.id, type: 'user', email: user.email },
-      { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '1h' }
+      { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '1h' },
     );
-
 
     const newRefreshToken = this.jwtService.sign(
       { sub: user.id, type: 'refresh' },
-      { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }
+      { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
     );
     // Optional: save hashed refreshToken in DB
 
-    user.refreshToken = await bcrypt.hash(newRefreshToken, parseInt(process.env.BCRYPT_SALT_ROUNDS || '10'));
+    user.refreshToken = await bcrypt.hash(
+      newRefreshToken,
+      parseInt(process.env.BCRYPT_SALT_ROUNDS || '10'),
+    );
     await this.userRepo.save(user);
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
-
-
 
   async getUserData(token: string) {
     if (!token) {
@@ -1047,8 +1037,4 @@ export class AuthService {
       data: safeUser,
     };
   }
-
-
-
-
 }

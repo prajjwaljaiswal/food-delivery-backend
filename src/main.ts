@@ -6,6 +6,7 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as express from 'express';
+import { UserSeedService } from './modules/seed/user.seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
@@ -83,6 +84,10 @@ async function bootstrap() {
   const seeder = app.get(SeedService);
   console.log('🔹 Seeding roles...');
   await seeder.seedRoles();
+
+  const userSeeder = app.get(UserSeedService);
+  console.log('🔹 Seeding users...');
+  await userSeeder.seedUsers();
 
   console.log('🔹 Seeding categories...');
   await seeder.seedCategories();
